@@ -1,5 +1,8 @@
 Before running the algorithm, please ensure the Python 2 version is greater than 2.7.
-Package: Soappy is needed and can be installed with easy_install.
+Package required: 
+    Soappy
+    sklearn
+    scipy
 
 name_match.py keeps the main program.
 	Mode 0 generates the submission file.
@@ -12,3 +15,5 @@ soap_client.py is responsible for giving queries to the server which is located 
 soap_server.py is a class defining the online services the server can provide.
 
 name.py is a class representing a name with its alternatives and authors.
+
+io.py is the file responding to read in csv files, serialization files and generate the submission file.

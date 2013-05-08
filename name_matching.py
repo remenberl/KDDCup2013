@@ -1,58 +1,10 @@
 #-*- coding: UTF-8 -*-
-import csv
-import os
 from SOAPpy import SOAPServer
+from sklearn.preprocessing import normalize
 from name import *
 from soap_service import *
 from custom_setting import *
-
-
-def load_files():
-    """Read in files from the folder "data".
-
-    Returns:
-        A tuple composed of two dictionaries.
-        name_instance_dict:
-            A dictionary with key: author's name string and value:
-            name instance. Note that the author's name is clean after
-            instantiation of the Name class.
-        id_name_dict:
-            A dictionary with key: author_id and value: author's name strings.
-            Note that the value is a tuple of clean name and noisy name.
-    """
-    name_instance_dict = dict()
-    id_name_dict = dict()
-    name_statistics = dict()
-    with open(author_file, 'rb') as csv_file:
-        author_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
-        #skip first line
-        next(author_reader)
-        for row in author_reader:
-            author_id = int(row[0])
-            author = Name(row[1])
-            id_name_dict[author_id] = [author.name, row[1]]
-            if author.name in name_instance_dict:
-                name_instance_dict[author.name].add_author_id(int(row[0]))
-            else:
-                author.add_author_id(int(row[0]))
-                name_instance_dict[author.name] = author
-            if author.last_name in name_statistics:
-                name_statistics[author.last_name] += 1
-                name_statistics[author.first_name] += 1
-
-    with open(paper_author_file, 'rb') as csv_file:
-        paper_author_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
-        #skip first line
-        next(paper_author_reader)
-        for row in paper_author_reader:
-            # paper_id = int(row[0])
-            author_id = int(row[1])
-            author = Name(row[2])
-            if author_id in id_name_dict:  # and author.name != id_name_dict[author_id][0]:
-                #name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
-                id_name_dict[author_id].append(author.name)
-                # print id_name_dict[author_id][0] + "->" + author.name
-    return (name_instance_dict, id_name_dict, name_statistics)
+from io import *
 
 
 def match_names(name_instance_dict):
@@ -77,32 +29,149 @@ def match_names(name_instance_dict):
                 for id in name_instance_dict[alternative].author_ids:
                     name_instance_dict[author_name].add_similar_author_id(id)
 
-    #####################################################
-    # Further improvements:
-    # For every name, find its similar author ids two hops away.
-    # That is, find its similar authors' similar authors.
-    # If the distance between them are small, add them into similar_author_ids.
-    # e.g., Michael Jordan and M.I. Jordan are close but they're two hops away.
-    # Moreover, Michael Jordan and Micheal Jordan are similar.
 
-
-def sort_author_id(author_id, exact_author_ids, similar_author_ids):
-    """Sort author_ids among exact_author_ids and similar_author_ids.
-
-    Note: the author_id needs to be first removed.
+def create_groups(name_instance_dict):
+    """Create potential duplicate groups for undistinct algorithm to analyse.
 
     Parameters:
-        exact_author_ids:
-            Attribute: author_ids of the Name class.
-        similar_author_ids:
-            Attribute: similar_author_ids of the Name class.
+        name_instance_dict:
+            A dictionary with key: author's name string and value:
+            name instance. Note that the author's name is clean after
+            instantiation of the Name class.
+
+    Returns:
+        A set containing lots of tuples describing the potential duplicate group.
+    """
+    groups = set()
+    for (author_name, name_instance) in name_instance_dict.iteritems():
+        groups.add(tuple(name_instance.author_ids))
+        groups.add(tuple(name_instance.similar_author_ids))
+    return groups
+
+
+def distinct(possible_duplicate_groups, coauthor_matrix):
+    """Detect duplicate groups based on coauthor relationship between authors.
+
+    Parameters:
+        possible_duplicate_groups:
+            A set containing lots of tuples describing the potential duplicate group.
+        coauthor_matrix:
+            A sparse matrix with row: author_id and column: author_id.
+            It is obtained from author_paper_matrix.
 
     Return:
-        A list of ranked author ids.
+        duplicate_groups:
+            A set containing lots of tuples describing the duplicate group.
     """
-    filetered_exact_author_ids = set(exact_author_ids)
-    filetered_exact_author_ids.remove(author_id)
-    return (list(filetered_exact_author_ids), list(similar_author_ids))
+    duplicate_groups = set()
+    print "In total " + str(len(possible_duplicate_groups)) + " groups:"
+    count = 0
+    for group in possible_duplicate_groups:
+        count += 1
+        if count % 100 == 0:
+            print "Finish analysing " \
+                + str(float(count)/len(possible_duplicate_groups)*100) \
+                + "% (" + str(count) + "/" + str(len(possible_duplicate_groups)) \
+                + ") possible duplicate groups."
+        # If there is only one author_id in the group, pass
+        if len(group) == 1:
+            duplicate_groups.add(group)
+            continue
+
+        similarity_dict = dict()
+        author_feature_dict = dict()
+        normalized_author_feature_dict = dict()
+        # Treat coauthors for a particular author as features and normalize it
+        for author in group:
+            author_feature_dict[(author,)] = coauthor_matrix.getrow(author)
+            normalized_author_feature_dict[(author,)] = normalize(
+                author_feature_dict[(author,)], norm='l2', axis=1)
+        # Compute Cosine similarity between every pair of potential duplicate authors in the group
+        for author_A in group:
+            for author_B in group:
+                if author_A < author_B:
+                    similarity_dict[((author_A,), (author_B,))] \
+                        = (normalized_author_feature_dict[(author_A,)]
+                            * normalized_author_feature_dict[(author_B,)].transpose())[0, 0]
+
+        while True:
+            max_similarity = 0
+            max_pair = ()
+            # Find the author partition pair with largest similarity
+            # and it should be larger than then the threshold
+            for (author_group_pair, similarity) in similarity_dict.iteritems():
+                (max_similarity, max_pair) = (similarity, author_group_pair) \
+                    if similarity > merge_threshold else (max_similarity, max_pair)
+
+            # If we cannot find such an author group pair,
+            #   output the current duplicate authors in the whole group,
+            # else
+            #   we merge this pair
+            if max_similarity == 0:
+                for author_group in author_feature_dict.iterkeys():
+                    duplicate_groups.add(author_group)
+                break
+            else:
+                # Compute the new feature and normalize it for the merged author partition pair
+                new_feature = author_feature_dict[max_pair[0]] + author_feature_dict[max_pair[1]]
+                new_author_group = max_pair[0] + max_pair[1]
+                author_feature_dict[new_author_group] = new_feature
+                normalized_author_feature_dict[new_author_group]\
+                    = normalize(author_feature_dict[new_author_group], norm='l2', axis=1)
+
+                # Remove individual author partition in the new merged author partition
+                del author_feature_dict[max_pair[0]]
+                del author_feature_dict[max_pair[1]]
+                rm_list = list()
+                for author_group_pair in similarity_dict.iterkeys():
+                    if author_group_pair[0] == max_pair[1] \
+                            or author_group_pair[1] == max_pair[1] \
+                            or author_group_pair[0] == max_pair[0] \
+                            or author_group_pair[1] == max_pair[0]:
+                        rm_list.append(author_group_pair)
+                for author_group_pair in rm_list:
+                    del similarity_dict[author_group_pair]
+                # Compute new similarity between this new partition
+                # with the rest existing partitions
+                for author_group in author_feature_dict.iterkeys():
+                    if author_group is not new_author_group:
+                        similarity_dict[(author_group, new_author_group)] \
+                            = (normalized_author_feature_dict[author_group]
+                                * normalized_author_feature_dict[new_author_group].transpose())[0, 0]
+    return duplicate_groups
+
+
+def sort_author_id(author_id, duplicate_groups, coauthor_matrix):
+    """Sort duplicate author_ids for each author_id based on coauthor similarity.
+
+    Note: the author_id needs to be first removed from groups in duplicate_groups.
+        For an author, he/she might have more than one potential group which need
+        to be improved. The ideal input should be just one group.
+
+    Parameters:
+        author_id: the author's id.
+        duplicate_groups:
+            A set of groups which contain duplicate author_ids separately.
+        coauthor_matrix:
+            A sparse matrix with row: author_id and column: author_id.
+            It is obtained from author_paper_matrix.
+
+    Return:
+        A list of ranked author ids based on coauthor similarity.
+    """
+    if not duplicate_groups:
+        return set()
+
+    duplicate_ids = max(duplicate_groups, key=len)
+
+    to_sort_ids = set(duplicate_ids)
+    similarity_dict = dict()
+
+    self_feature = coauthor_matrix.getrow(author_id)
+    for id in to_sort_ids:
+        similarity_dict[id] = (coauthor_matrix.getrow(id) * self_feature.transpose())[0, 0]
+    sorted_ids = sorted(similarity_dict.keys(), key=lambda x: -similarity_dict[x])
+    return sorted_ids
 
     #####################################################
     # Further improvements:
@@ -111,63 +180,67 @@ def sort_author_id(author_id, exact_author_ids, similar_author_ids):
     # will be the duplicate.
 
 
-def save_result(name_instance_dict, id_name_dict):
-    """Generate the submission file.
-
-    Note: the author_id needs to be first removed.
+def refine_duplicate_groups(duplicate_groups, coauthor_matrix):
+    """Refine the duplicate authors for each author id.
 
     Parameters:
-        name_instance_dict:
-            A dictionary with key: author's name string and value:
-            name instance. Note that the author's name is clean after
-            instantiation of the Name class.
-        id_name_dict:
-            A dictionary with key: author_id and value: author's name strings.
-            Note that the value is a tuple of clean name and noisy name.
+        duplicate_groups:
+            A set of groups which contain duplicate author_ids separately.
+        coauthor_matrix:
+            A sparse matrix with row: author_id and column: author_id.
+            It is obtained from author_paper_matrix.
+
+    Return:
+        A dictionary of duplicate authors with key: author id and value:
+        a list of duplicate author ids
     """
-    directory = os.path.dirname(duplicate_authors_file)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    with open(duplicate_authors_file, 'wb') as result_file:
-        result_file.write("AuthorId,DuplicateAuthorIds" + '\n')
-        for author_id in sorted(id_name_dict.iterkeys()):
-            result_file.write(str(author_id) + ',' + str(author_id))
-            name_instance = name_instance_dict[id_name_dict[author_id][0]]
-            sorted_ids = sort_author_id(author_id, name_instance.author_ids,
-                                        name_instance.similar_author_ids)
-            for id in sorted_ids[0]:
-                result_file.write(' ' + str(id))
-            for id in sorted_ids[1]:
-                result_file.write(' ' + str(id))
-            result_file.write('\n')
-    # directory = os.path.dirname(duplicate_authors_file)
-    # if not os.path.exists(directory):
-    #     os.makedirs(directory)
-    # with open(duplicate_authors_file, 'wb') as result_file:
-    #     result_file.write("AuthorId,DuplicateAuthorIds" + '\n')
-    #     for author_id in sorted(id_name_dict.iterkeys()):
-    #         name_instance = name_instance_dict[id_name_dict[author_id][0]]
-    #         sorted_ids = sort_author_id(author_id, name_instance.author_ids,
-    #                                     name_instance.similar_author_ids)
-    #         if (len(sorted_ids[0]) + len(sorted_ids[1])) != 0:
-    #             result_file.write(id_name_dict[author_id][1] + ' ' + str(author_id) + ',')
-    #             for id in sorted_ids[0]:
-    #                 result_file.write(' ' + id_name_dict[id][1] + ' ' + str(id))
-    #             result_file.write('|')
-    #             for id in sorted_ids[1]:
-    #                 result_file.write(' ' + id_name_dict[id][1] + ' ' + str(id))
-    #             result_file.write('\n')
+    duplicate_ids = dict()
+    count = 0
+    length = len(duplicate_groups)
+    for group in duplicate_groups:
+        for author in group:
+            group_bak = set(group)
+            group_bak.remove(author)
+            duplicate_ids.setdefault(author, list()).append(group_bak)
+
+        count += 1
+        if count % 1000 == 0:
+            print "Finish mapping each author to duplicate authors from " \
+                + str(float(count)/length*100) \
+                + "% (" + str(count) + "/" + str(length) \
+                + ") duplicate groups."
+
+    authors_duplicates_dict = dict()
+    for (author_id, duplicate_groups) in duplicate_ids.iteritems():
+        duplicate_ids = max(duplicate_groups, key=len)
+        authors_duplicates_dict[author_id] = duplicate_ids
+
+    #####################################################
+    # Further improvements:
+    # Get better idea about refining the duplicate_groups for
+    # each author_id to be exactly one set.
+    # Currently, there are more than one groups because:
+    # We generate potential groups based on author's name.
+    # So for "Michael Jordan" we have a group and for "M.I. Jordan" we have another.
+    # And for both groups we have some overlapping author_ids.
+
+    return authors_duplicates_dict
 
 
 if __name__ == '__main__':
     mode = raw_input("Type in number to choose running mode:\n" +
                      "(0: Generate Submission File, 1: Work as SOAP server)\n")
     if int(mode) == 0:
-        (name_instance_dict, id_name_dict, name_statistics) = load_files()
+        (name_instance_dict, id_name_dict, name_statistics,
+            author_paper_matrix, coauthor_matrix) = load_files()
         match_names(name_instance_dict)
-        save_result(name_instance_dict, id_name_dict)
+        possible_duplicate_groups = create_groups(name_instance_dict)
+        duplicate_groups = distinct(possible_duplicate_groups, coauthor_matrix)
+        authors_duplicates_dict = refine_duplicate_groups(duplicate_groups, coauthor_matrix)
+        save_result(authors_duplicates_dict, name_instance_dict, id_name_dict)
     elif int(mode) == 1:
-        (name_instance_dict, id_name_dict, name_statistics) = load_files()
+        (name_instance_dict, id_name_dict, name_statistics,
+            author_paper_matrix, coauthor_matrix) = load_files()
         match_names(name_instance_dict)
 
         server = SOAPServer((server_soap_address, server_port))

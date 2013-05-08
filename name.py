@@ -1,4 +1,4 @@
-import itertools
+#-*- coding: UTF-8 -*-
 
 
 class Name:
@@ -66,22 +66,22 @@ class Name:
         candidates.add(' '.join([first_name, middle_name, last_name]))
         #e.g., Michael Jordan
         candidates.add(' '.join([first_name, '', last_name]))
-        # #e.g., M. Jordan
+        #e.g., M. Jordan
         # candidates.add(' '.join([self.__shorten_string(first_name),
         #                          '',
         #                          last_name]))
-        # # #e.g., M. J.
+        # #e.g., M. J.
         # candidates.add(' '.join(
         #                [self.__shorten_string(first_name),
         #                '',
         #                self.__shorten_string(last_name)]
         #                ))
-        #e.g., Michael J. Jordan
-        # candidates.add(' '.join(
-        #                [first_name,
-        #                self.__shorten_string(middle_name),
-        #                last_name]
-        #                ))
+        # e.g., Michael J. Jordan
+        candidates.add(' '.join(
+                       [first_name,
+                       self.__shorten_string(middle_name),
+                       last_name]
+                       ))
         # #e.g., M. J. Jordan
         # candidates.add(' '.join(
         #                [self.__shorten_string(first_name),
