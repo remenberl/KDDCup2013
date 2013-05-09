@@ -19,7 +19,7 @@ client_port = 5900
 
 merge_threshold = 0.001
 
-serialization_dir = "./searialize/"
+serialization_dir = "./serialize/"
 coauthor_matrix_file = "coauthor.seal"
 covenue_matrix_file = "covenue.seal"
 author_venue_matrix_file = "author_paper.seal"
