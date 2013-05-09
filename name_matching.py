@@ -141,45 +141,6 @@ def distinct(possible_duplicate_groups, coauthor_matrix):
     return duplicate_groups
 
 
-def sort_author_id(author_id, duplicate_groups, coauthor_matrix):
-    """Sort duplicate author_ids for each author_id based on coauthor similarity.
-
-    Note: the author_id needs to be first removed from groups in duplicate_groups.
-        For an author, he/she might have more than one potential group which need
-        to be improved. The ideal input should be just one group.
-
-    Parameters:
-        author_id: the author's id.
-        duplicate_groups:
-            A set of groups which contain duplicate author_ids separately.
-        coauthor_matrix:
-            A sparse matrix with row: author_id and column: author_id.
-            It is obtained from author_paper_matrix.
-
-    Return:
-        A list of ranked author ids based on coauthor similarity.
-    """
-    if not duplicate_groups:
-        return set()
-
-    duplicate_ids = max(duplicate_groups, key=len)
-
-    to_sort_ids = set(duplicate_ids)
-    similarity_dict = dict()
-
-    self_feature = coauthor_matrix.getrow(author_id)
-    for id in to_sort_ids:
-        similarity_dict[id] = (coauthor_matrix.getrow(id) * self_feature.transpose())[0, 0]
-    sorted_ids = sorted(similarity_dict.keys(), key=lambda x: -similarity_dict[x])
-    return sorted_ids
-
-    #####################################################
-    # Further improvements:
-    # Consider the number of papers published under the assumption that
-    # the more one author publishes papers, the more likely he/she
-    # will be the duplicate.
-
-
 def refine_duplicate_groups(duplicate_groups, coauthor_matrix):
     """Refine the duplicate authors for each author id.
 
