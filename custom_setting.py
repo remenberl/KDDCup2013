@@ -17,7 +17,7 @@ server_port = 5900
 client_port = 5900
 
 
-merge_threshold = 0.01
+merge_threshold = 0.001
 
 serialization_dir = "./searialize/"
 coauthor_matrix_file = "coauthor.seal"

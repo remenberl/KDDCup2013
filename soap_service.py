@@ -38,7 +38,7 @@ class SOAPService:
             author_name:
                 A string of author's name. It could be not in the dataset.
 
-        Return:
+        Returns:
             A struct supported by soappy keeping exactly matched author_ids
             and similar author_ids.
         """
@@ -70,7 +70,7 @@ class SOAPService:
             author_id:
                 A string of author's id. It could be not in the dataset.
 
-        Return:
+        Returns:
             A struct supported by soappy keeping original name in author.csv
             and alternatives in paperauthor.csv
         """

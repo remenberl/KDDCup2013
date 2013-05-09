@@ -59,7 +59,7 @@ def distinct(possible_duplicate_groups, coauthor_matrix):
             A sparse matrix with row: author_id and column: author_id.
             It is obtained from author_paper_matrix.
 
-    Return:
+    Returns:
         duplicate_groups:
             A set containing lots of tuples describing the duplicate group.
     """
@@ -151,7 +151,7 @@ def refine_duplicate_groups(duplicate_groups, coauthor_matrix):
             A sparse matrix with row: author_id and column: author_id.
             It is obtained from author_paper_matrix.
 
-    Return:
+    Returns:
         A dictionary of duplicate authors with key: author id and value:
         a list of duplicate author ids
     """
@@ -173,8 +173,10 @@ def refine_duplicate_groups(duplicate_groups, coauthor_matrix):
 
     authors_duplicates_dict = dict()
     for (author_id, duplicate_groups) in duplicate_ids.iteritems():
-        duplicate_ids = max(duplicate_groups, key=len)
-        authors_duplicates_dict[author_id] = duplicate_ids
+        duplicate_group = set()
+        for group in duplicate_groups:
+            duplicate_group = duplicate_group.union(group)
+        authors_duplicates_dict[author_id] = duplicate_group
 
     #####################################################
     # Further improvements:

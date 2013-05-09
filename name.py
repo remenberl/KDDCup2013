@@ -44,7 +44,7 @@ class Name:
         Parameters:
             string: Input string to find initial.
 
-        Return:
+        Returns:
             The initial character.
         """
         if not string:
@@ -58,7 +58,7 @@ class Name:
         Parameters:
             (first_name, middle_name, last_name): A tuple composed of
                 first, middle and last names.
-        Return:
+        Returns:
             A set of all possible names.
         """
         candidates = set()
@@ -67,10 +67,10 @@ class Name:
         #e.g., Michael Jordan
         candidates.add(' '.join([first_name, '', last_name]))
         #e.g., M. Jordan
-        # candidates.add(' '.join([self.__shorten_string(first_name),
-        #                          '',
-        #                          last_name]))
-        # #e.g., M. J.
+        candidates.add(' '.join([self.__shorten_string(first_name),
+                                 '',
+                                 last_name]))
+        #e.g., M. J.
         # candidates.add(' '.join(
         #                [self.__shorten_string(first_name),
         #                '',
@@ -82,13 +82,13 @@ class Name:
                        self.__shorten_string(middle_name),
                        last_name]
                        ))
-        # #e.g., M. J. Jordan
-        # candidates.add(' '.join(
-        #                [self.__shorten_string(first_name),
-        #                self.__shorten_string(middle_name),
-        #                last_name]
-        #                ))
-        # #e.g., M. J. J.
+        #e.g., M. J. Jordan
+        candidates.add(' '.join(
+                       [self.__shorten_string(first_name),
+                       self.__shorten_string(middle_name),
+                       last_name]
+                       ))
+        #e.g., M. J. J.
         # candidates.add(' '.join(
         #                [self.__shorten_string(first_name),
         #                self.__shorten_string(middle_name),
@@ -105,7 +105,7 @@ class Name:
         Note: compared to generate_possbile_names, this function additionally
             covers the permutations of first, middle and last names.
 
-        Return:
+        Returns:
             A set of all possible names.
         """
         self.alternatives.add(self.name)
@@ -123,7 +123,7 @@ class Name:
         Note: This function will call generate_all_possible_names automatically
             if self.alternatives is empty.
 
-        Return:
+        Returns:
             A set of all possible names.
         """
         self.__generate_all_possible_names()
