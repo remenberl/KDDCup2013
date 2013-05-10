@@ -54,8 +54,7 @@ def create_groups(name_instance_dict):
     """
     groups = set()
     for (author_name, name_instance) in name_instance_dict.iteritems():
-        groups.add(tuple(name_instance.author_ids))
-        groups.add(tuple(name_instance.similar_author_ids))
+        groups.add(tuple(name_instance.author_ids.union(name_instance.similar_author_ids)))
     return groups
 
 
