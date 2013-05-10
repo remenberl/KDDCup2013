@@ -1,7 +1,7 @@
 import csv
 import os
 import cPickle
-from scipy.sparse import lil_matrix
+from scipy.sparse import lil_matrix, spdiags
 from name import *
 from custom_setting import *
 
@@ -103,6 +103,9 @@ def load_files():
                     # print id_name_dict[author_id][0] + "->" + author.name
         print "Computing the coauthor graph."
         coauthor_matrix = author_paper_matrix * author_paper_matrix.transpose()
+
+        print "Remove diagonal elements in coauthor_matrix."
+        coauthor_matrix = coauthor_matrix - spdiags(coauthor_matrix.diagonal(), 0, 2293837 + 1, 2293837 + 1, 'csr')
 
         print "Write into the serialization files."
         cPickle.dump(
