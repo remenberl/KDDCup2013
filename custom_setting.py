@@ -16,7 +16,7 @@ client_soap_address = "127.0.0.1"
 server_port = 5900
 client_port = 5900
 
-
+sequence_matcher_threshold = 0.8
 merge_threshold = 0.001
 
 serialization_dir = "./serialize/"
