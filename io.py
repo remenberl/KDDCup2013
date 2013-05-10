@@ -97,7 +97,7 @@ def load_files():
                 author_paper_matrix[author_id, paper_id] = 1
                 author = Name(row[2])
                 if author_id in id_name_dict:
-                    name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
+                    # name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
                     id_name_dict[author_id].append(author.name)
                     # print id_name_dict[author_id][0] + "->" + author.name
         print "Computing the coauthor graph."

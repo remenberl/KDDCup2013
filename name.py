@@ -22,7 +22,7 @@ class Name:
             name: The name read from the csv file, could be noisy.
         """
         # In case of M.I. Jordan
-        name = name.replace('.', ' ').lower()
+        name = name.replace('?', '').replace('.', ' ').lower()
         self.name = name
         self.__split_name()
         # Make the name less noisy
@@ -71,12 +71,12 @@ class Name:
         candidates.add(' '.join([self.__shorten_string(first_name),
                                  '',
                                  last_name]))
-        #e.g., M. J.
-        candidates.add(' '.join(
-                       [self.__shorten_string(first_name),
-                       '',
-                       self.__shorten_string(last_name)]
-                       ))
+        # #e.g., M. J.
+        # candidates.add(' '.join(
+        #                [self.__shorten_string(first_name),
+        #                '',
+        #                self.__shorten_string(last_name)]
+        #                ))
         # e.g., Michael J. Jordan
         candidates.add(' '.join(
                        [first_name,
@@ -89,12 +89,12 @@ class Name:
                        self.__shorten_string(middle_name),
                        last_name]
                        ))
-        #e.g., M. J. J.
-        candidates.add(' '.join(
-                       [self.__shorten_string(first_name),
-                       self.__shorten_string(middle_name),
-                       self.__shorten_string(last_name)]
-                       ))
+        # #e.g., M. J. J.
+        # candidates.add(' '.join(
+        #                [self.__shorten_string(first_name),
+        #                self.__shorten_string(middle_name),
+        #                self.__shorten_string(last_name)]
+        #                ))
 
         #####################################################
         # Further improvements: alternatives like Mike
@@ -112,10 +112,10 @@ class Name:
         self.alternatives.add(self.name)
         pool = [self.first_name, self.middle_name, self.last_name]
         self.alternatives = self.alternatives.union(self.__genearte_possible_names(pool))
-        for permutation in itertools.permutations(pool):
-            self.alternatives = self.alternatives.union(
-                self.__genearte_possible_names(permutation))
-        self.alternatives = self.alternatives.difference(set([self.name]))
+        # for permutation in itertools.permutations(pool):
+        #     self.alternatives = self.alternatives.union(
+        #         self.__genearte_possible_names(permutation))
+        # self.alternatives = self.alternatives.difference(set([self.name]))
         return self.alternatives
 
     def get_alternatives(self):

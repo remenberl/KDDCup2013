@@ -1,6 +1,7 @@
 #-*- coding: UTF-8 -*-
 from SOAPpy import SOAPServer
 from sklearn.preprocessing import normalize
+from difflib import SequenceMatcher
 from name import *
 from soap_service import *
 from custom_setting import *
@@ -29,6 +30,15 @@ def match_names(name_instance_dict):
                 for id in name_instance_dict[alternative].author_ids:
                     name_instance_dict[author_name].add_similar_author_id(id)
 
+    for (author_name1, name_instance1) in name_instance_dict.iteritems():
+        for (author_name2, name_instance2) in name_instance_dict.iteritems():
+            if SequenceMatcher(None, author_name1, author_name2).real_quick_ratio() >= sequence_matcher_threshold:
+                if SequenceMatcher(None, author_name1, author_name2).real_quick_ratio() >= sequence_matcher_threshold:
+                    for id in name_instance1.author_ids:
+                        name_instance2.add_similar_author_id(id)
+                    for id in name_instance2.author_ids:
+                        name_instance1.add_similar_author_id(id)
+
 
 def create_groups(name_instance_dict):
     """Create potential duplicate groups for undistinct algorithm to analyse.
@@ -37,7 +47,7 @@ def create_groups(name_instance_dict):
         name_instance_dict:
             A dictionary with key: author's name string and value:
             name instance. Note that the author's name is clean after
-            instantiation of the Name class.
+            initialization of the Name class.
 
     Returns:
         A set containing lots of tuples describing the potential duplicate group.
