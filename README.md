@@ -34,5 +34,5 @@ For the latest performance please check:
 
 https://docs.google.com/spreadsheet/ccc?key=0Ap0nQ3Fy9DUodDhnRFJORTJFUE9KT051OU5FMWdzY2c&usp=sharing
 
-Now this version touches 0.96162
+Now this version touches 0.96539 
 
