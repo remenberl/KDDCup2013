@@ -30,6 +30,8 @@ def match_names(name_instance_dict):
                 for id in name_instance_dict[alternative].author_ids:
                     name_instance_dict[author_name].add_similar_author_id(id)
 
+    length = len(name_instance_dict)
+    count = 0
     for (author_name1, name_instance1) in name_instance_dict.iteritems():
         for (author_name2, name_instance2) in name_instance_dict.iteritems():
             if SequenceMatcher(None, author_name1, author_name2).real_quick_ratio() >= sequence_matcher_threshold:
@@ -38,6 +40,10 @@ def match_names(name_instance_dict):
                         name_instance2.add_similar_author_id(id)
                     for id in name_instance2.author_ids:
                         name_instance1.add_similar_author_id(id)
+            count += 1
+            if count % 1000 == 0:
+                print "Finish matching " + str(float(count)/length*100)\
+                    + "% (" + str(count) + "/" + str(length) + ") names with the whole database."
 
 
 def create_groups(name_instance_dict):
