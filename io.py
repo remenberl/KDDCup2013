@@ -2,6 +2,7 @@ import csv
 import os
 import cPickle
 from scipy.sparse import lil_matrix, spdiags
+from difflib import SequenceMatcher
 from name import *
 from custom_setting import *
 
@@ -97,9 +98,14 @@ def load_files():
                 author_paper_matrix[author_id, paper_id] = 1
                 author = Name(row[2])
                 if author_id in id_name_dict:
-                    # name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
+                    if author.last_name == name_instance_dict[id_name_dict[author_id][0]].last_name:
+                        name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
+                        id_name_dict[author_id].append(author.name)
+                    elif SequenceMatcher(None, author.name, id_name_dict[author_id][0]).real_quick_ratio() >= sequence_matcher_threshold:
+                        if SequenceMatcher(None, author.name, id_name_dict[author_id][0]).ratio() >= sequence_matcher_threshold:
+                            name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
+                            id_name_dict[author_id].append(author.name)
                     id_name_dict[author_id].append(author.name)
-                    # print id_name_dict[author_id][0] + "->" + author.name
         print "Computing the coauthor graph."
         coauthor_matrix = author_paper_matrix * author_paper_matrix.transpose()
 
@@ -126,13 +132,13 @@ def load_files():
             author_paper_matrix, coauthor_matrix)
 
 
-def save_result(rank_authors_dict, name_instance_dict, id_name_dict):
+def save_result(authors_duplicates_dict, name_instance_dict, id_name_dict):
     """Generate the submission file.
 
     Parameters:
-        rank_authors_dict:
-            A dictionary of ranked duplicate authors with key: author id
-            and value: a sorted list of duplicate author ids
+        authors_duplicates_dict:
+            A dictionary of duplicate authors with key: author id
+            and value: a set of duplicate author ids
         name_instance_dict:
             A dictionary with key: author's name string and value:
             name instance. Note that the author's name is clean after
@@ -146,28 +152,18 @@ def save_result(rank_authors_dict, name_instance_dict, id_name_dict):
         os.makedirs(directory)
     with open(duplicate_authors_file, 'wb') as result_file:
         result_file.write("AuthorId,DuplicateAuthorIds" + '\n')
-        length = len(rank_authors_dict)
-        count = 0
-        for author_id in sorted(rank_authors_dict.iterkeys()):
-            count += 1
-            if count % 1000 == 0:
-                print "Finish writing " + str(float(count)/length*100)\
-                    + "% (" + str(count) + "/" + str(length) + ") lines."
-
-            #result_file.write(str(len(rank_authors_dict[author_id])) + " " +
-                # str(len(
-                # name_instance_dict[id_name_dict[author_id][0]].author_ids))
-                # + " ")
-            #result_file.write(id_name_dict[author_id][1]
-                # + ' ' + str(author_id) + ',')
+        for author_id in sorted(authors_duplicates_dict.iterkeys()):
             result_file.write(str(author_id) + ',' + str(author_id))
-            for id in rank_authors_dict[author_id]:
-                #result_file.write
-                # (' ' + id_name_dict[id][1] + ' ' + str(id) + ',')
+            id_list = sorted(authors_duplicates_dict[author_id])
+            for id in id_list:
                 result_file.write(' ' + str(id))
-            #result_file.write("~~~~")
-            #for id in name_instance_dict
-            # [id_name_dict[author_id][0]].author_ids:
-            #    result_file.write
-                    # (' ' + id_name_dict[id][1] + ' ' + str(id) + ',')
+            result_file.write('\n')
+
+    with open(duplicate_authors_full_name_file, 'wb') as result_file:
+        for author_id in sorted(authors_duplicates_dict.iterkeys()):
+            result_file.write(id_name_dict[author_id][1]
+                              + ' ' + str(author_id))
+            id_list = sorted(authors_duplicates_dict[author_id])
+            for id in id_list:
+                result_file.write(', ' + id_name_dict[id][1] + ' ' + str(id))
             result_file.write('\n')

@@ -3,6 +3,7 @@
 author_file = "./data/Author.csv"
 paper_author_file = "./data/PaperAuthor.csv"
 duplicate_authors_file = "./result/duplicate_authors.csv"
+duplicate_authors_full_name_file = "./result/duplicate_authors_fullname.csv"
 
 #Address for SOAP service
 # server_soap_address = "192.168.11.102"

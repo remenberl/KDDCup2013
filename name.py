@@ -22,7 +22,7 @@ class Name:
             name: The name read from the csv file, could be noisy.
         """
         # In case of M.I. Jordan
-        name = name.replace('?', '').replace('.', ' ').lower()
+        name = name.replace('?', '').replace('-', '').replace('.', ' ').lower()
         self.name = name
         self.__split_name()
         # Make the name less noisy

@@ -1,7 +1,6 @@
 #-*- coding: UTF-8 -*-
 from SOAPpy import SOAPServer
 from sklearn.preprocessing import normalize
-from difflib import SequenceMatcher
 from name import *
 from soap_service import *
 from custom_setting import *
@@ -30,20 +29,20 @@ def match_names(name_instance_dict):
                 for id in name_instance_dict[alternative].author_ids:
                     name_instance_dict[author_name].add_similar_author_id(id)
 
-    length = len(name_instance_dict)
-    count = 0
-    for (author_name1, name_instance1) in name_instance_dict.iteritems():
-        for (author_name2, name_instance2) in name_instance_dict.iteritems():
-            if SequenceMatcher(None, author_name1, author_name2).real_quick_ratio() >= sequence_matcher_threshold:
-                if SequenceMatcher(None, author_name1, author_name2).real_quick_ratio() >= sequence_matcher_threshold:
-                    for id in name_instance1.author_ids:
-                        name_instance2.add_similar_author_id(id)
-                    for id in name_instance2.author_ids:
-                        name_instance1.add_similar_author_id(id)
-            count += 1
-            if count % 1000 == 0:
-                print "Finish matching " + str(float(count)/length*100)\
-                    + "% (" + str(count) + "/" + str(length) + ") names with the whole database."
+    # length = len(name_instance_dict)
+    # count = 0
+    # for (author_name1, name_instance1) in name_instance_dict.iteritems():
+    #     for (author_name2, name_instance2) in name_instance_dict.iteritems():
+    #         if SequenceMatcher(None, author_name1, author_name2).real_quick_ratio() >= sequence_matcher_threshold:
+    #             if SequenceMatcher(None, author_name1, author_name2).ratio() >= sequence_matcher_threshold:
+    #                 for id in name_instance1.author_ids:
+    #                     name_instance2.add_similar_author_id(id)
+    #                 for id in name_instance2.author_ids:
+    #                     name_instance1.add_similar_author_id(id)
+    #     count += 1
+    #     if count % 100 == 0:
+    #         print "Finish matching " + str(float(count)/length*100)\
+    #             + "% (" + str(count) + "/" + str(length) + ") names with the whole database."
 
 
 def create_groups(name_instance_dict):
@@ -60,7 +59,7 @@ def create_groups(name_instance_dict):
     """
     groups = set()
     for (author_name, name_instance) in name_instance_dict.iteritems():
-        groups.add(tuple(name_instance.author_ids.union(name_instance.similar_author_ids)))
+        groups.add(tuple(sorted(name_instance.author_ids.union(name_instance.similar_author_ids))))
     return groups
 
 
@@ -83,7 +82,7 @@ def distinct(possible_duplicate_groups, coauthor_matrix):
     count = 0
     for group in possible_duplicate_groups:
         count += 1
-        if count % 100 == 0:
+        if count % 500 == 0:
             print "Finish analysing " \
                 + str(float(count)/len(possible_duplicate_groups)*100) \
                 + "% (" + str(count) + "/" + str(len(possible_duplicate_groups)) \
@@ -171,20 +170,10 @@ def refine_duplicate_groups(duplicate_groups, coauthor_matrix):
         a list of duplicate author ids
     """
     duplicate_ids = dict()
-    count = 0
-    length = len(duplicate_groups)
+    print "Mapping each author to his/her duplicate authors from duplicate groups."
     for group in duplicate_groups:
         for author in group:
-            group_bak = set(group)
-            group_bak.remove(author)
-            duplicate_ids.setdefault(author, list()).append(group_bak)
-
-        count += 1
-        if count % 1000 == 0:
-            print "Finish mapping each author to duplicate authors from " \
-                + str(float(count)/length*100) \
-                + "% (" + str(count) + "/" + str(length) \
-                + ") duplicate groups."
+            duplicate_ids.setdefault(author, list()).append(group)
 
     authors_duplicates_dict = dict()
     for (author_id, duplicate_groups) in duplicate_ids.iteritems():
@@ -193,20 +182,35 @@ def refine_duplicate_groups(duplicate_groups, coauthor_matrix):
             duplicate_group = duplicate_group.union(group)
         authors_duplicates_dict[author_id] = duplicate_group
 
-    #####################################################
-    # Further improvements:
-    # Get better idea about refining the duplicate_groups for
-    # each author_id to be exactly one set.
-    # Currently, there are more than one groups because:
-    # We generate potential groups based on author's name.
-    # So for "Michael Jordan" we have a group and for "M.I. Jordan" we have another.
-    # And for both groups we have some overlapping author_ids.
-
+    print "Finding close duplicate author set for each author id."
+    iteration = 0
+    while True:
+        print "\tIteration " + str(iteration)
+        iteration += 1
+        if iteration >= 100:
+            break
+        do_next_recursion = False
+        for (author_id, duplicate_group) in authors_duplicates_dict.iteritems():
+            changed = False
+            final_duplicate_group = set(duplicate_group)
+            for _author_id in duplicate_group:
+                if duplicate_group != authors_duplicates_dict[_author_id]:
+                    changed = True
+                    do_next_recursion = True
+                    final_duplicate_group = final_duplicate_group.union(authors_duplicates_dict[_author_id])
+            if changed:
+                authors_duplicates_dict[author_id] = set(final_duplicate_group)
+                for _author_id in duplicate_group:
+                    authors_duplicates_dict[_author_id] = set(final_duplicate_group)
+        if do_next_recursion is False:
+            break
+    for author_id in authors_duplicates_dict.iterkeys():
+        authors_duplicates_dict[author_id].remove(author_id)
     return authors_duplicates_dict
 
 
 if __name__ == '__main__':
-    mode = raw_input("Type in number to choose running mode:\n" +
+    mode = raw_input("Type in a number to choose running mode:\n" +
                      "(0: Generate Submission File, 1: Work as SOAP server)\n")
     if int(mode) == 0:
         (name_instance_dict, id_name_dict, name_statistics,
