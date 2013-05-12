@@ -1,3 +1,4 @@
+#-*- coding: UTF-8 -*-
 import csv
 import os
 import cPickle
@@ -43,8 +44,8 @@ def load_files():
             os.path.isfile(serialization_dir + name_statistics_file):
             #os.path.isfile(serialization_dir + covenue_matrix_file) and \
             #os.path.isfile(serialization_dir + author_venue_matrix_file) and \
-        print "Serialization files exist."
-        print "Read in the serialization files."
+        print "\tSerialization files exist."
+        print "\tRead in the serialization files."
         coauthor_matrix = cPickle.load(
             open(serialization_dir + coauthor_matrix_file, "rb"))
         author_paper_matrix = cPickle.load(
@@ -60,13 +61,13 @@ def load_files():
         name_statistics = cPickle.load(
             open(serialization_dir + name_statistics_file, "rb"))
     else:
-        print "Serialization files do not exist."
+        print "\tSerialization files do not exist."
         name_instance_dict = dict()
         id_name_dict = dict()
         name_statistics = dict()
         # The maximum id for author is 2293837 and for paper is 2259021
         author_paper_matrix = lil_matrix((2293837 + 1, 2259021 + 1))
-        print "Read in the author.csv file."
+        print "\tRead in the author.csv file."
         with open(author_file, 'rb') as csv_file:
             author_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
             #skip first line
@@ -84,7 +85,7 @@ def load_files():
                     name_statistics[author.last_name] += 1
                     name_statistics[author.first_name] += 1
 
-        print "Read in the paperauthor.csv file."
+        print "\tRead in the paperauthor.csv file."
         with open(paper_author_file, 'rb') as csv_file:
             paper_author_reader = csv.reader(
                 csv_file, delimiter=',', quotechar='"')
@@ -105,14 +106,16 @@ def load_files():
                         if SequenceMatcher(None, author.name, id_name_dict[author_id][0]).ratio() >= sequence_matcher_threshold:
                             name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
                             id_name_dict[author_id].append(author.name)
+                    # name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
                     id_name_dict[author_id].append(author.name)
-        print "Computing the coauthor graph."
+                    # print id_name_dict[author_id][0] + "->" + author.name
+        print "\tComputing the coauthor graph."
         coauthor_matrix = author_paper_matrix * author_paper_matrix.transpose()
 
-        print "Remove diagonal elements in coauthor_matrix."
+        print "\tRemove diagonal elements in coauthor_matrix."
         coauthor_matrix = coauthor_matrix - spdiags(coauthor_matrix.diagonal(), 0, 2293837 + 1, 2293837 + 1, 'csr')
 
-        print "Write into the serialization files."
+        print "\tWrite into the serialization files."
         cPickle.dump(
             coauthor_matrix,
             open(serialization_dir + coauthor_matrix_file, "wb"), 2)
@@ -133,7 +136,7 @@ def load_files():
 
 
 def save_result(authors_duplicates_dict, name_instance_dict, id_name_dict):
-    """Generate the submission file.
+    """Generate the submission file and fullname file for analysis.
 
     Parameters:
         authors_duplicates_dict:

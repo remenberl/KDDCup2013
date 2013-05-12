@@ -12,8 +12,9 @@ class Name:
         middle_name: a string describing the middle name.
         last_name: a string describing the last name.
         alternatives: a set of all possible names.
+            e.g., "Michael I. Jordan" or "M. Jordan".
         author_ids: a set of all author ids with the exact same name.
-        similar_author_ids: a set of all author ids with similar names
+        similar_author_ids: a set of all author ids with similar names.
     """
     def __init__(self, name):
         """Initialize the instance with a name.

@@ -1,37 +1,36 @@
 Before running the algorithm, please ensure the Python 2 version is greater than 2.7.
 
+Computer configuration suggested:
+
+    All the code has been tested on a PC with 16GB memory with Ubuntu 13.04.
+
 Package required: 
 
-    Soappy: Mainly used for providing soap service
-
-    sklearn: Mainly used for normalizing vectors. Can be installed following http://scikit-learn.
-
-    org/stable/install.html
+    sklearn: Mainly used for normalizing vectors. Can be installed following http://scikit-learn.org/stable/install.html
 
     scipy: Mainly used for supporting sparse matrix
 
+Files:
+    main.py keeps the entrance of the whole program.
 
-name_match.py keeps the main program
+    custome_setting.py keeps all the settings of files and parameters.
 
-	Mode 0 generates the submission file.
+    name.py is a class representing a name with its alternatives and author ids.
 
-	Mode 1 starts the soap service, i.e., your computer becomes the server. (you might not be interested in) 
+    io.py is the file responding to read in csv files, serialization files and generate the submission and analysis file.
 
-custome_setting.py keeps all the settings of files and soap address/ports.
+    recall_related.py keeps functions from step 2 to step 3, aiming at generating possible duplicate author ids to increasing the recall.
 
-soap_client.py is responsible for giving queries to the server which is located in my office by default.
+    precision_related.py keeps functions for step 4, aiming at finding out the real duplicates.
 
-soap_server.py is a class defining the online services the server can provide.
+Folders:
+    data/ keeps all csv files
 
-name.py is a class representing a name with its alternatives and authors.
-
-io.py is the file responding to read in csv files, serialization files and generate the submission file.
-
-data/ keeps all csv files
-serialize/ keeps all intermediate files (run once)
+    serialize/ keeps all intermediate files (run once)
+    
+    result/ keeps all the saved results like submission files.
 
 For the latest performance please check: 
-
 https://docs.google.com/spreadsheet/ccc?key=0Ap0nQ3Fy9DUodDhnRFJORTJFUE9KT051OU5FMWdzY2c&usp=sharing
 
 Now this version touches 0.96539 
