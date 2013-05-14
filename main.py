@@ -21,5 +21,5 @@ if __name__ == '__main__':
     authors_duplicates_dict = merge_local_clusters(real_duplicate_groups)
     find_closure(authors_duplicates_dict)
 
-    print "Step 5/5: Generate submission files."
+    print "Step 5/5: Generate submission files"
     save_result(authors_duplicates_dict, name_instance_dict, id_name_dict)

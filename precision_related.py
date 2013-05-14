@@ -20,7 +20,15 @@ def local_clustering(potential_duplicate_groups, coauthor_matrix):
     real_duplicate_groups = set()
     print "\tIn total " + str(len(potential_duplicate_groups)) + " groups:"
     count = 0
+
+    similarity_dict = dict()
+    author_group_feature_dict = dict()
+    normalized_author_group_feature_dict = dict()
+
     for group in potential_duplicate_groups:
+        local_author_group_set = set()
+        local_similarity_set = set()
+
         count += 1
         if count % 500 == 0:
             print "\tFinish analysing " \
@@ -32,66 +40,65 @@ def local_clustering(potential_duplicate_groups, coauthor_matrix):
             real_duplicate_groups.add(group)
             continue
 
-        similarity_dict = dict()
-        author_feature_dict = dict()
-        normalized_author_feature_dict = dict()
         # Treat coauthors for a particular author as features and normalize it
         for author in group:
-            author_feature_dict[(author,)] = coauthor_matrix.getrow(author)
-            normalized_author_feature_dict[(author,)] = normalize(
-                author_feature_dict[(author,)], norm='l2', axis=1)
+            local_author_group_set.add((author,))
+            if (author,) not in author_group_feature_dict:
+                author_group_feature_dict[(author,)] = coauthor_matrix.getrow(author)
+                normalized_author_group_feature_dict[(author,)] = normalize(
+                    author_group_feature_dict[(author,)], norm='l2', axis=1)
         # Compute Cosine similarity between every pair of potential duplicate authors in the group
         for author_A in group:
             for author_B in group:
                 if author_A < author_B:
-                    similarity_dict[((author_A,), (author_B,))] \
-                        = (normalized_author_feature_dict[(author_A,)]
-                            * normalized_author_feature_dict[(author_B,)].transpose())[0, 0]
+                    local_similarity_set.add(((author_A,), (author_B,)))
+                    if ((author_A,), (author_B,)) not in similarity_dict:
+                        similarity_dict[((author_A,), (author_B,))] \
+                            = (normalized_author_group_feature_dict[(author_A,)]
+                                * normalized_author_group_feature_dict[(author_B,)].transpose())[0, 0]
 
         while True:
             max_similarity = 0
             max_pair = ()
             # Find the author partition pair with largest similarity
             # and it should be larger than then the threshold
-            for (author_group_pair, similarity) in similarity_dict.iteritems():
-                (max_similarity, max_pair) = (similarity, author_group_pair) \
-                    if similarity > merge_threshold else (max_similarity, max_pair)
+            for author_group_pair in local_similarity_set:
+                (max_similarity, max_pair) = (similarity_dict[author_group_pair], author_group_pair) \
+                    if similarity_dict[author_group_pair] > merge_threshold else (max_similarity, max_pair)
 
             # If we cannot find such an author group pair,
             #   output the current duplicate authors in the whole group,
             # else
             #   we merge this pair
             if max_similarity == 0:
-                for author_group in author_feature_dict.iterkeys():
+                for author_group in local_author_group_set:
                     real_duplicate_groups.add(author_group)
                 break
             else:
-                # Compute the new feature and normalize it for the merged author partition pair
-                new_feature = author_feature_dict[max_pair[0]] + author_feature_dict[max_pair[1]]
-                new_author_group = max_pair[0] + max_pair[1]
-                author_feature_dict[new_author_group] = new_feature
-                normalized_author_feature_dict[new_author_group]\
-                    = normalize(author_feature_dict[new_author_group], norm='l2', axis=1)
+                # Compute the new feature and normalize it for the merged author group pair
+                new_author_group = tuple(sorted(max_pair[0] + max_pair[1]))
+                if new_author_group not in author_group_feature_dict:
+                    new_feature = author_group_feature_dict[max_pair[0]] + author_group_feature_dict[max_pair[1]]
+                    author_group_feature_dict[new_author_group] = new_feature
+                    normalized_author_group_feature_dict[new_author_group]\
+                        = normalize(author_group_feature_dict[new_author_group], norm='l2', axis=1)
 
-                # Remove individual author partition in the new merged author partition
-                del author_feature_dict[max_pair[0]]
-                del author_feature_dict[max_pair[1]]
-                rm_list = list()
-                for author_group_pair in similarity_dict.iterkeys():
-                    if author_group_pair[0] == max_pair[1] \
-                            or author_group_pair[1] == max_pair[1] \
-                            or author_group_pair[0] == max_pair[0] \
-                            or author_group_pair[1] == max_pair[0]:
-                        rm_list.append(author_group_pair)
-                for author_group_pair in rm_list:
-                    del similarity_dict[author_group_pair]
-                # Compute new similarity between this new partition
-                # with the rest existing partitions
-                for author_group in author_feature_dict.iterkeys():
-                    if author_group is not new_author_group:
-                        similarity_dict[(author_group, new_author_group)] \
-                            = (normalized_author_feature_dict[author_group]
-                                * normalized_author_feature_dict[new_author_group].transpose())[0, 0]
+                # Remove individual author group in the new merged author group
+                local_author_group_set.remove(max_pair[0])
+                local_author_group_set.remove(max_pair[1])
+                for author_group_pair in set(local_similarity_set):
+                    if max_pair[0] in author_group_pair or max_pair[1] in author_group_pair:
+                        local_similarity_set.remove(author_group_pair)
+                # Compute new similarity between this new group
+                # with the rest existing groups
+                for author_group in local_author_group_set:
+                    new_pair = tuple(sorted((author_group, new_author_group)))
+                    local_similarity_set.add(new_pair)
+                    if new_pair not in similarity_dict:
+                        similarity_dict[new_pair] \
+                            = (normalized_author_group_feature_dict[author_group]
+                                * normalized_author_group_feature_dict[new_author_group].transpose())[0, 0]
+                local_author_group_set.add(new_author_group)
     return real_duplicate_groups
 
 

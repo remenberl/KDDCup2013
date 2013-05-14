@@ -45,7 +45,7 @@ def load_files():
             #os.path.isfile(serialization_dir + covenue_matrix_file) and \
             #os.path.isfile(serialization_dir + author_venue_matrix_file) and \
         print "\tSerialization files exist."
-        print "\tRead in the serialization files."
+        print "\tReading in the serialization files."
         coauthor_matrix = cPickle.load(
             open(serialization_dir + coauthor_matrix_file, "rb"))
         author_paper_matrix = cPickle.load(
@@ -67,7 +67,7 @@ def load_files():
         name_statistics = dict()
         # The maximum id for author is 2293837 and for paper is 2259021
         author_paper_matrix = lil_matrix((2293837 + 1, 2259021 + 1))
-        print "\tRead in the author.csv file."
+        print "\tReading in the author.csv file."
         with open(author_file, 'rb') as csv_file:
             author_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
             #skip first line
@@ -85,7 +85,7 @@ def load_files():
                     name_statistics[author.last_name] += 1
                     name_statistics[author.first_name] += 1
 
-        print "\tRead in the paperauthor.csv file."
+        print "\tReading in the paperauthor.csv file."
         with open(paper_author_file, 'rb') as csv_file:
             paper_author_reader = csv.reader(
                 csv_file, delimiter=',', quotechar='"')
@@ -112,10 +112,10 @@ def load_files():
         print "\tComputing the coauthor graph."
         coauthor_matrix = author_paper_matrix * author_paper_matrix.transpose()
 
-        print "\tRemove diagonal elements in coauthor_matrix."
+        print "\tRemoving diagonal elements in coauthor_matrix."
         coauthor_matrix = coauthor_matrix - spdiags(coauthor_matrix.diagonal(), 0, 2293837 + 1, 2293837 + 1, 'csr')
 
-        print "\tWrite into the serialization files."
+        print "\tWriting into the serialization files."
         cPickle.dump(
             coauthor_matrix,
             open(serialization_dir + coauthor_matrix_file, "wb"), 2)
