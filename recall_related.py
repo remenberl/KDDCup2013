@@ -18,8 +18,8 @@ def add_similar_ids_under_name(name_instance_dict):
             if alternative in name_instance_dict:
                 # Add author_ids into the similar_author_ids
                 # of the name's alternative.
-                for id in name_instance.author_ids:
-                    name_instance_dict[alternative].add_similar_author_id(id)
+                # for id in name_instance.author_ids:
+                #     name_instance_dict[alternative].add_similar_author_id(id)
                 # Add alternative's author_ids into the similar_author_ids
                 # of the current name.
                 for id in name_instance_dict[alternative].author_ids:
