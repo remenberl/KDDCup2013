@@ -10,7 +10,7 @@ from custom_setting import *
 
 def load_files():
     """Read in files from the folder "data" if no serialization files exist in
-       folder "to use".
+       folder serialization_dir.
 
     Returns:
         A tuple composed of several data structures.
@@ -32,6 +32,17 @@ def load_files():
         coauthor_matrix:
             A sparse matrix with row: author_id and column: author_id.
             It is obtained from author_paper_matrix.
+
+        --- added by Chi ---
+        #paper_venue_dict:
+        #    A dictionary with key: paper_id and value: venue id
+        #    conference id and journal id are merged
+        author_venue_matrix:
+            A sparse matrix with row: author_id and column: venue_id
+            It is obtained by joining author_paper_matrix with paper_venue_dict
+        covenue_matrix:
+            A sparse matrix with row: author_id and column: author_id.
+            It is obtained by joining author_venue_matrix with itself
     """
 
     directory = os.path.dirname(serialization_dir)
@@ -44,16 +55,12 @@ def load_files():
             os.path.isfile(serialization_dir + name_statistics_file):
             #os.path.isfile(serialization_dir + covenue_matrix_file) and \
             #os.path.isfile(serialization_dir + author_venue_matrix_file) and \
-        print "\tSerialization files exist."
+        print "\tJialu's serialization files exist."
         print "\tReading in the serialization files."
         coauthor_matrix = cPickle.load(
             open(serialization_dir + coauthor_matrix_file, "rb"))
         author_paper_matrix = cPickle.load(
             open(serialization_dir + author_paper_matrix_file, "rb"))
-        # covenue_matrix = cPickle.load(open(
-            # serialization_dir + covenue_matrix_file, "rb"))
-        # author_venue_matrix = cPickle.load(
-            # open(serialization_dir + author_venue_matrix_file, "rb"))
         name_instance_dict = cPickle.load(
             open(serialization_dir + name_instance_file, "rb"))
         id_name_dict = cPickle.load(
@@ -61,12 +68,13 @@ def load_files():
         name_statistics = cPickle.load(
             open(serialization_dir + name_statistics_file, "rb"))
     else:
-        print "\tSerialization files do not exist."
+        print "\tJialu's serialization files do not exist."
         name_instance_dict = dict()
         id_name_dict = dict()
         name_statistics = dict()
         # The maximum id for author is 2293837 and for paper is 2259021
-        author_paper_matrix = lil_matrix((2293837 + 1, 2259021 + 1))
+        full_author_paper_matrix = lil_matrix((max_author + 1, max_paper + 1))
+        author_paper_matrix = lil_matrix((max_author + 1, max_paper + 1))
         print "\tReading in the author.csv file."
         with open(author_file, 'rb') as csv_file:
             author_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
@@ -96,9 +104,10 @@ def load_files():
                 count += 1
                 paper_id = int(row[0])
                 author_id = int(row[1])
-                author_paper_matrix[author_id, paper_id] = 1
+                full_author_paper_matrix[author_id, paper_id] = 1
                 author = Name(row[2])
                 if author_id in id_name_dict:
+                    author_paper_matrix[author_id, paper_id] = 1
                     if author.last_name == name_instance_dict[id_name_dict[author_id][0]].last_name:
                         name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
                         id_name_dict[author_id].append(author.name)
@@ -110,12 +119,12 @@ def load_files():
                     id_name_dict[author_id].append(author.name)
                     # print id_name_dict[author_id][0] + "->" + author.name
         print "\tComputing the coauthor graph."
-        coauthor_matrix = author_paper_matrix * author_paper_matrix.transpose()
+        coauthor_matrix = author_paper_matrix * full_author_paper_matrix.transpose()
 
         print "\tRemoving diagonal elements in coauthor_matrix."
-        coauthor_matrix = coauthor_matrix - spdiags(coauthor_matrix.diagonal(), 0, 2293837 + 1, 2293837 + 1, 'csr')
+        coauthor_matrix = coauthor_matrix - spdiags(coauthor_matrix.diagonal(), 0, max_author + 1, max_author + 1, 'csr')
 
-        print "\tWriting into the serialization files."
+        print "\tWriting into Jialu's serialization files."
         cPickle.dump(
             coauthor_matrix,
             open(serialization_dir + coauthor_matrix_file, "wb"), 2)
@@ -131,8 +140,64 @@ def load_files():
         cPickle.dump(
             name_statistics,
             open(serialization_dir + name_statistics_file, "wb"), 2)
+
+    if os.path.isfile(serialization_dir + covenue_matrix_file) and \
+            os.path.isfile(serialization_dir + author_venue_matrix_file):
+        print "\tChi's serialization files exist."
+        print "\tReading in Chi's serialization files."
+        covenue_matrix = cPickle.load(open(
+            serialization_dir + covenue_matrix_file, "rb"))
+        author_venue_matrix = cPickle.load(
+            open(serialization_dir + author_venue_matrix_file, "rb"))
+    else:
+        print "\tChi's serialization files do not exist."
+        paper_venue_dict = {}
+        # The maximum id for journal is 5222 and for conference is 22228
+        full_author_venue_matrix = lil_matrix((max_author + 1, max_conference + max_journal + 1))
+        author_venue_matrix = lil_matrix((max_author + 1, max_conference + max_journal + 1))
+        print "\tReading in the sanitizedPaper.csv file."
+        with open(paper_file, 'rb') as csv_file:
+            paper_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
+            #skip first line
+            next(paper_reader)
+            for row in paper_reader:
+                paper_id = int(row[0])
+                conference = int(row[3])
+                journal = int(row[4])
+                # id_name_dict[author_id] = [author.name, row[1]]
+                if conference>0:
+                    paper_venue_dict[paper_id] = conference + max_journal
+                elif journal>0:
+                    paper_venue_dict[paper_id] = journal
+
+        print "\tComputing the author_venue matrix."
+        row,col = author_paper_matrix.nonzero()
+        # print len(row), len(col)
+        for i in xrange(len(row)):
+            pid = col[i]
+            if pid in paper_venue_dict:
+                full_author_venue_matrix[row[i],paper_venue_dict[pid]] += 1
+                if row[i] in id_name_dict:
+                    author_venue_matrix[row[i],paper_venue_dict[pid]] += 1
+        del paper_venue_dict
+
+        print "\tComputing the covenue matrix."
+        covenue_matrix = author_venue_matrix * full_author_venue_matrix.transpose()
+
+        print "\tRemoving diagonal elements in covenue_matrix."
+        covenue_matrix = covenue_matrix - spdiags(covenue_matrix.diagonal(), 0, max_author + 1, max_author + 1, 'csr')
+
+        print "\tWriting into Chi's serialization files."
+        cPickle.dump(
+            covenue_matrix,
+            open(serialization_dir + covenue_matrix_file, "wb"), 2)
+        cPickle.dump(
+            author_venue_matrix,
+            open(serialization_dir + author_venue_matrix_file, "wb"), 2)
+
     return (name_instance_dict, id_name_dict, name_statistics,
-            author_paper_matrix, coauthor_matrix)
+            author_paper_matrix, coauthor_matrix,
+            author_venue_matrix, covenue_matrix)
 
 
 def save_result(authors_duplicates_dict, name_instance_dict, id_name_dict):
