@@ -1,6 +1,6 @@
 #-*- coding: UTF-8 -*-
 import itertools
-
+import re
 
 class Name:
     """Represent a name with its alternatives and authors.
@@ -23,22 +23,50 @@ class Name:
             name: The name read from the csv file, could be noisy.
         """
         # In case of M.I. Jordan
-        name = name.replace('?', '').replace('-', '').replace('.', ' ').lower()
+        name = name.replace('?', '').replace('-', '').lower()
+        # replace M.I. to M I.
+        name = re.sub('([a-zA-Z]+)(\.)([a-zA-Z]+)', '\g<1> \g<3>', name)
+        # replace M I. to M I
+        name = name.replace('.', '').lower()
+
+        # remove all  non [a-zA-Z] characters
+        # eable this and try again
+        name = re.sub('[^a-zA-Z ]', '', name)
+
         self.name = name
         self.__split_name()
         # Make the name less noisy
         self.name = ' '.join(
                     [self.first_name, self.middle_name, self.last_name])
+        self.name.strip()
         self.author_ids = set()
         self.similar_author_ids = set()
         self.alternatives = set()
 
     def __split_name(self):
         """Split a name into first, middle and last names."""
-        elements = self.name.split(' ')
-        self.first_name = elements[0].strip()
-        self.middle_name = ' '.join(elements[1:-1]).strip()
-        self.last_name = elements[-1].strip()
+        tokens = self.name.split(' ')
+        suffix = ['jr', 'sr']
+        suffix2 = ['i', 'ii', 'iii', 'iv', 'v']
+        elements = [token for token in tokens if token not in suffix]
+        if len(elements) > 0 and elements[-1] in suffix2:
+            del elements[-1]
+
+        if len(elements) > 0:
+            self.first_name = elements[0].strip()
+        else:
+            self.first_name = ''
+
+        if len(elements) > 1:
+            self.last_name = elements[-1].strip()
+        else:
+            self.last_name = ''
+
+        if len(elements) > 2:
+            self.middle_name = ' '.join(elements[1:-1]).strip()
+        else:
+            self.middle_name = ''
+    
 
     def __shorten_string(self, string):
         """Find initial of a string.
@@ -64,13 +92,17 @@ class Name:
             A set of all possible names.
         """
         candidates = set()
+
+        if len(first_name) == 0 and len(middle_name) == 0 and len(last_name) == 0:
+            candidates.add('')
+            return candidates
+
         #e.g., Michael Jr. Jordan
         candidates.add(' '.join([first_name, middle_name, last_name]))
         #e.g., Michael Jordan
-        candidates.add(' '.join([first_name, '', last_name]))
+        candidates.add(' '.join([first_name, last_name]))
         #e.g., M. Jordan
         candidates.add(' '.join([self.__shorten_string(first_name),
-                                 '',
                                  last_name]))
         # #e.g., M. J.
         # candidates.add(' '.join(
@@ -110,7 +142,9 @@ class Name:
         Returns:
             A set of all possible names.
         """
-        self.alternatives.add(self.name)
+        self.alternatives.add(self.name.strip())
+        if len(self.first_name) == 0 and len(self.middle_name) == 0 and len(self.last_name) == 0:
+            return self.alternatives
         pool = [self.first_name, self.middle_name, self.last_name]
         self.alternatives = self.alternatives.union(self.__genearte_possible_names(pool))
         # for permutation in itertools.permutations(pool):
