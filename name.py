@@ -16,56 +16,72 @@ class Name:
         author_ids: a set of all author ids with the exact same name.
         similar_author_ids: a set of all author ids with similar names.
     """
-    def __init__(self, name):
-        """Initialize the instance with a name.
+    def __name_process(self, name, mode=1):
 
-        Parameters:
-            name: The name read from the csv file, could be noisy.
-        """
         # In case of M.I. Jordan
-        name = name.replace('?', '').replace('-', '').lower()
+        name = name.replace('?', '').lower().strip()
         # replace M.I. to M I.
         name = re.sub('([a-zA-Z]+)(\.)([a-zA-Z]+)', '\g<1> \g<3>', name)
         # replace M I. to M I
-        name = name.replace('.', '').lower()
 
         # remove all  non [a-zA-Z] characters
         # eable this and try again
         name = re.sub('[^a-zA-Z ]', '', name)
 
-        self.name = name
-        self.__split_name()
-        # Make the name less noisy
-        self.name = ' '.join(
-                    [self.first_name, self.middle_name, self.last_name])
-        self.name.strip()
-        self.author_ids = set()
-        self.similar_author_ids = set()
-        self.alternatives = set()
+        name = ' '.join(name.split())
 
-    def __split_name(self):
+        (first_name, middle_name, last_name) = self.__split_name(name)
+
+        if mode == 1:
+            self.first_name = first_name
+            self.middle_name = middle_name
+            self.last_name = last_name
+            self.name = ' '.join([first_name, middle_name, last_name]).strip()
+            self.name = ' '.join(self.name.split())
+            return self.name
+        else:
+            s = ' '.join([first_name, middle_name, last_name]).strip()
+            return ' '.join(s.split())
+
+    def __init__(self, name, quick=False):
+        """Initialize the instance with a name.
+
+        Parameters:
+            name: The name read from the csv file, could be noisy.
+        """
+        self.__name_process(name.replace('.', ' ').replace('-', ''), 1)
+        if not quick:
+            self.alternatives = set()
+            self.author_ids = set()
+            self.similar_author_ids = set()
+            self.add_alternative(self.__name_process(name.replace('.', '').replace('-', ''), 2))
+            self.add_alternative(self.__name_process(name.replace('.', '').replace('-', ' '), 2))
+            self.add_alternative(self.__name_process(name.replace('.', ' ').replace('-', ' '), 2))   
+
+    def __split_name(self, name):
         """Split a name into first, middle and last names."""
-        tokens = self.name.split(' ')
+        tokens = name.split(' ')
         suffix = ['jr', 'sr']
-        suffix2 = ['i', 'ii', 'iii', 'iv', 'v']
+        suffix2 = ['i', 'ii', 'iii', 'iv', 'v', 'first', 'second', 'third']
         elements = [token for token in tokens if token not in suffix]
         if len(elements) > 0 and elements[-1] in suffix2:
             del elements[-1]
 
         if len(elements) > 0:
-            self.first_name = elements[0].strip()
+            first_name = elements[0].strip()
         else:
-            self.first_name = ''
+            first_name = ''
 
         if len(elements) > 1:
-            self.last_name = elements[-1].strip()
+            last_name = elements[-1].strip()
         else:
-            self.last_name = ''
+            last_name = ''
 
         if len(elements) > 2:
-            self.middle_name = ' '.join(elements[1:-1]).strip()
+            middle_name = ' '.join(elements[1:-1]).strip()
         else:
-            self.middle_name = ''
+            middle_name = ''
+        return (first_name, middle_name, last_name)
     
 
     def __shorten_string(self, string):
@@ -98,12 +114,12 @@ class Name:
             return candidates
 
         #e.g., Michael Jr. Jordan
-        candidates.add(' '.join([first_name, middle_name, last_name]))
+        candidates.add(' '.join([first_name, middle_name, last_name]).strip())
         #e.g., Michael Jordan
-        candidates.add(' '.join([first_name, last_name]))
+        candidates.add(' '.join([first_name, '', last_name]).strip())
         #e.g., M. Jordan
-        candidates.add(' '.join([self.__shorten_string(first_name),
-                                 last_name]))
+        candidates.add(' '.join([self.__shorten_string(first_name), '',
+                                 last_name]).strip())
         # #e.g., M. J.
         # candidates.add(' '.join(
         #                [self.__shorten_string(first_name),
@@ -115,13 +131,17 @@ class Name:
                        [first_name,
                        self.__shorten_string(middle_name),
                        last_name]
-                       ))
+                       ).strip())
         #e.g., M. J. Jordan
         candidates.add(' '.join(
                        [self.__shorten_string(first_name),
                        self.__shorten_string(middle_name),
                        last_name]
-                       ))
+                       ).strip())
+
+        candidates_new = set()
+        for candidate in candidates:
+            candidates_new.add(' '.join(candidate.split()))
         # #e.g., M. J. J.
         # candidates.add(' '.join(
         #                [self.__shorten_string(first_name),
@@ -131,7 +151,8 @@ class Name:
 
         #####################################################
         # Further improvements: alternatives like Mike
-        return candidates
+
+        return candidates_new
 
     def __generate_all_possible_names(self):
         """Generate all possible names considering all possible permutations.
