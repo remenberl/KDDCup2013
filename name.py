@@ -49,7 +49,7 @@ class Name:
         Parameters:
             name: The name read from the csv file, could be noisy.
         """
-        self.__name_process(name.replace('.', ' ').replace('-', ''), 1)
+        self.__name_process(name.replace('.', ' ').replace('-', ' '), 1)
         if not quick:
             self.alternatives = set()
             self.author_ids = set()
@@ -64,6 +64,8 @@ class Name:
         suffix = ['jr', 'sr']
         suffix2 = ['i', 'ii', 'iii', 'iv', 'v', 'first', 'second', 'third']
         elements = [token for token in tokens if token not in suffix]
+        if len(elements) > 0 and elements[-1] in suffix2:
+            del elements[-1]
         if len(elements) > 0 and elements[-1] in suffix2:
             del elements[-1]
 

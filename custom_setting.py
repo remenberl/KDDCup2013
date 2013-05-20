@@ -18,13 +18,13 @@ merge_threshold = 0.000000001
 word_title_count_threshold = 100
 
 serialization_dir = "./serialize/"
-coauthor_matrix_file = "coauthor.seal.v1"
-covenue_matrix_file = "covenue.seal.v1"
-author_word_matrix_file = "author_word.seal.v1"
-author_paper_matrix_file = "author_paper.seal.v1"
-name_instance_file = "name_instance.seal.v1"
-id_name_file = "id_name.seal.v1"
-name_statistics_file = "name_statistics.seal.v1"
+coauthor_matrix_file = "coauthor.seal.v1_1"
+covenue_matrix_file = "covenue.seal.v1_1"
+author_word_matrix_file = "author_word.seal.v1_1"
+author_paper_matrix_file = "author_paper.seal.v1_1"
+name_instance_file = "name_instance.seal.v1_1"
+id_name_file = "id_name.seal.v1_1"
+name_statistics_file = "name_statistics.seal.v1_1"
 
 max_conference = 5222
 max_journal = 22228

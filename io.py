@@ -69,13 +69,22 @@ def load_author_files():
 
 def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
     if os.path.isfile(serialization_dir + coauthor_matrix_file) and \
-            os.path.isfile(serialization_dir + author_paper_matrix_file):
+            os.path.isfile(serialization_dir + author_paper_matrix_file) and \
+            os.path.isfile(serialization_dir + 'complete_' + name_instance_file) and \
+            os.path.isfile(serialization_dir + 'complete_' +id_name_file) and \
+            os.path.isfile(serialization_dir + 'complete_' + name_statistics_file):
         print "\tSerialization files related to coauthors exist."
         print "\tReading in the serialization files."
         coauthor_matrix = cPickle.load(
             open(serialization_dir + coauthor_matrix_file, "rb"))
         author_paper_matrix = cPickle.load(
             open(serialization_dir + author_paper_matrix_file, "rb"))
+        name_instance_dict = cPickle.load(
+            open(serialization_dir + 'complete_' + name_instance_file, "rb"))
+        id_name_dict = cPickle.load(
+            open(serialization_dir + 'complete_' + id_name_file, "rb"))
+        name_statistics = cPickle.load(
+            open(serialization_dir + 'complete_' + name_statistics_file, "rb"))
     else:
         print "\tSerialization files related to coauthors do not exist."
         # The maximum id for author is 2293837 and for paper is 2259021
@@ -130,6 +139,15 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
         cPickle.dump(
             author_paper_matrix,
             open(serialization_dir + author_paper_matrix_file, "wb"), 2)
+        cPickle.dump(
+            name_instance_dict,
+            open(serialization_dir + 'complete_' + name_instance_file, "wb"), 2)
+        cPickle.dump(
+            id_name_dict,
+            open(serialization_dir + 'complete_' + id_name_file, "wb"), 2)
+        cPickle.dump(
+            name_statistics,
+            open(serialization_dir + 'complete_' + name_statistics_file, "wb"), 2)
     
     return (author_paper_matrix, coauthor_matrix)
 

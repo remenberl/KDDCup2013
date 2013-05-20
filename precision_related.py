@@ -219,9 +219,19 @@ def final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name
     for author_id in authors_duplicates_dict.iterkeys():
         middle_name = name_instance_dict[id_name_dict[author_id][0]].middle_name.strip()
         if middle_name != '':
+            elements = middle_name.split(' ')
+            initials = ""
+            for element in elements:
+                if len(element) > 0:
+                    initials += element[0]
             for duplicate_author_id in set(authors_duplicates_dict[author_id]):
                 duplicate_author_middle_name = name_instance_dict[id_name_dict[duplicate_author_id][0]].middle_name.strip()
-                if duplicate_author_middle_name != '' and SequenceMatcher(None, middle_name, duplicate_author_middle_name).ratio() < 0.5:
+                elements = duplicate_author_middle_name.split(' ')
+                duplicate_initials = ""
+                for element in elements:
+                    if len(element) > 0:
+                        duplicate_initials += element[0]
+                if duplicate_author_middle_name != '' and SequenceMatcher(None, initials, duplicate_initials).ratio() == 0:
                     authors_duplicates_dict[author_id].remove(duplicate_author_id)
                     count += 1
     print "\tRemoving " + str(count) + " author_ids from the final list for middle name mismatch."
@@ -254,7 +264,8 @@ def final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name
             for duplicate_author_id in set(authors_duplicates_dict[author_id]):
                 duplicate_author = name_instance_dict[id_name_dict[duplicate_author_id][0]]
                 duplicate_author_first_name = duplicate_author.first_name.strip()
-                first_name_dict.setdefault(duplicate_author_first_name, set()).add(duplicate_author_id)
+                if duplicate_author_first_name != first_name:
+                    first_name_dict.setdefault(duplicate_author_first_name, set()).add(duplicate_author_id)
             if len(first_name_dict) > 1:
                 max_length = 0
                 for author_set in first_name_dict.itervalues():
@@ -262,9 +273,13 @@ def final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name
                         (max_length, max_author_set) = (len(author_set), author_set)
                 if max_length == 1:
                     for duplicate_author_id in set(authors_duplicates_dict[author_id]):
-                        authors_duplicates_dict[author_id].remove(duplicate_author_id)
+                        if name_instance_dict[id_name_dict[duplicate_author_id][0]].first_name.strip() != first_name:
+                            authors_duplicates_dict[author_id].remove(duplicate_author_id)
                     count += 1
                 else:
-                    authors_duplicates_dict[author_id] = max_author_set
+                    for duplicate_author_id in set(authors_duplicates_dict[author_id]):
+                        if name_instance_dict[id_name_dict[duplicate_author_id][0]].first_name.strip() != first_name \
+                                or author_id not in max_author_set:
+                            authors_duplicates_dict[author_id].remove(duplicate_author_id)
                     count += 1
     print "\tRemoving " + str(count) + " author_ids from the final list for first name being shortened."
