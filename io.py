@@ -33,7 +33,12 @@ def load_author_files():
             author_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
             #skip first line
             next(author_reader)
+            count = 0
             for row in author_reader:
+                count += 1
+                if count % 10000 == 0:
+                    print "\tFinish analysing " \
+                        + str(count) + " lines of the file."
                 author_id = int(row[0])
                 author = Name(row[1])
                 id_name_dict[author_id] = [author.name, row[1]]
