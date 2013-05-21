@@ -23,6 +23,10 @@ Files:
 
     precision_related.py keeps functions for step 4, aiming at finding out the real duplicates.
 
+    chinese.py keeps name units for chinese names.
+
+    taiwan.py keeps name units for taiwanese names.
+
 Folders:
     data/ keeps all csv files
 
@@ -33,5 +37,5 @@ Folders:
 For the latest performance please check: 
 https://docs.google.com/spreadsheet/ccc?key=0Ap0nQ3Fy9DUodDhnRFJORTJFUE9KT051OU5FMWdzY2c&usp=sharing
 
-Now this version touches 0.97498 
+Now this version touches 0.978 
 
