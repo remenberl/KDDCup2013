@@ -1,3 +1,7 @@
+taiwan_last_names = set(['chen', 'chang', 'chai', 'huang', 'hwang', 'lin', 'li', 'liu', 'liou', \
+	'lu', 'lew', 'sai', 'tsai', 'tsay', 'wang', 'wu', 'yang', 'zhang', 'lim', 'ng', 'lau', 'teng'])
+
+
 taiwan_units = set(['ba',
 'bo',
 'bai',

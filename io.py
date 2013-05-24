@@ -77,7 +77,8 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
             os.path.isfile(serialization_dir + author_paper_matrix_file) and \
             os.path.isfile(serialization_dir + 'complete_' + name_instance_file) and \
             os.path.isfile(serialization_dir + 'complete_' +id_name_file) and \
-            os.path.isfile(serialization_dir + 'complete_' + name_statistics_file):
+            os.path.isfile(serialization_dir + 'complete_' + name_statistics_file) and\
+            os.path.isfile(serialization_dir + 'complete_' + author_paper_stat_file) :
         print "\tSerialization files related to coauthors exist."
         print "\tReading in the serialization files."
         coauthor_matrix = cPickle.load(
@@ -90,11 +91,14 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
             open(serialization_dir + 'complete_' + id_name_file, "rb"))
         name_statistics = cPickle.load(
             open(serialization_dir + 'complete_' + name_statistics_file, "rb"))
+        author_paper_stat = cPickle.load(
+            open(serialization_dir + 'complete_' + author_paper_stat_file, "rb"))
     else:
         print "\tSerialization files related to coauthors do not exist."
         # The maximum id for author is 2293837 and for paper is 2259021
         full_author_paper_matrix = lil_matrix((max_author + 1, max_paper + 1))
         author_paper_matrix = lil_matrix((max_author + 1, max_paper + 1))
+        author_paper_stat = dict()
         print "\tReading in the paperauthor.csv file."
         with open(paper_author_file, 'rb') as csv_file:
             paper_author_reader = csv.reader(
@@ -109,6 +113,10 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
                         + str(count) + " lines of the file."
                 paper_id = int(row[0])
                 author_id = int(row[1])
+                if author_id in author_paper_stat:
+                    author_paper_stat[author_id] += 1
+                else:
+                    author_paper_stat[author_id] = 1
                 full_author_paper_matrix[author_id, paper_id] = 1
                 author = Name(row[2], True)
                 if author.last_name not in name_statistics:
@@ -127,10 +135,9 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
                     if author.last_name == name_instance_dict[id_name_dict[author_id][0]].last_name:
                         name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
                         id_name_dict[author_id].append(author.name)
-                    elif SequenceMatcher(None, author.name, id_name_dict[author_id][0]).real_quick_ratio() >= sequence_matcher_threshold:
-                        if SequenceMatcher(None, author.name, id_name_dict[author_id][0]).ratio() >= sequence_matcher_threshold:
-                            name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
-                            id_name_dict[author_id].append(author.name)
+                    elif SequenceMatcher(None, author.name, id_name_dict[author_id][0]).ratio() >= 0.6:
+                        name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
+                        id_name_dict[author_id].append(author.name)
         print "\tComputing the coauthor graph."
         coauthor_matrix = author_paper_matrix * full_author_paper_matrix.transpose()
 
@@ -153,8 +160,11 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
         cPickle.dump(
             name_statistics,
             open(serialization_dir + 'complete_' + name_statistics_file, "wb"), 2)
+        cPickle.dump(
+            author_paper_stat,
+            open(serialization_dir + 'complete_' + author_paper_stat_file, "wb"), 2)
     
-    return (author_paper_matrix, coauthor_matrix)
+    return (author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, name_statistics, author_paper_stat)
 
 
 def load_covenue_files(id_name_dict, author_paper_matrix):
@@ -355,7 +365,7 @@ def load_files():
     """
     (name_instance_dict, id_name_dict, name_statistics) = load_author_files()
     print
-    (author_paper_matrix, coauthor_matrix) = load_coauthor_files(name_instance_dict, id_name_dict, name_statistics)
+    (author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, name_statistics, author_paper_stat) = load_coauthor_files(name_instance_dict, id_name_dict, name_statistics)
     print
     covenue_matrix = load_covenue_files(id_name_dict, author_paper_matrix)
     print
@@ -364,7 +374,7 @@ def load_files():
     return (name_instance_dict, id_name_dict, name_statistics,
             coauthor_matrix,
             covenue_matrix,
-            author_word_matrix)
+            author_word_matrix, author_paper_stat)
 
 
 def save_result(authors_duplicates_dict, name_instance_dict, id_name_dict):

@@ -1,3 +1,9 @@
+chinese_last_names = set(['wang', 'li', 'zhang', 'liu', 'chen', 'yang', 'huang', 'zhao', 'wu', 'zhou', 'xu', 'sun', 'ma', \
+	'zhu', 'hu', 'guo', 'he', 'gao', 'lin', 'luo', 'zheng', 'liang', 'xie', 'song', 'tang', 'xu', 'han', 'feng', 'deng', 'cao', \
+	'peng', 'zeng', 'xiao', 'tian', 'dong', 'yuan', 'pan', 'yu', 'jiang', 'cai', 'du', 'ye', 'cheng', 'su', 'wei', 'lv', 'ding', \
+	'ren', 'shen', 'sheng', 'yao', 'lu', 'jiang', 'cui', 'zhong', 'tan', 'lu', 'fan', 'jin', 'shi', 'liao', 'jia', 'xia', 'fu', 'fang', \
+	'wei', 'bai', 'zou', 'xiong', 'qin', 'qiu', 'jiang', 'weng', 'shu'])
+
 chinese_units = set([
 'ba',
 'bo',

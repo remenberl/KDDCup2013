@@ -17,14 +17,18 @@ paper_word_weight = 10
 merge_threshold = 0.000000001
 word_title_count_threshold = 100
 
+version = "v1_7"
 serialization_dir = "./serialize/"
-coauthor_matrix_file = "coauthor.seal.v1_1"
-covenue_matrix_file = "covenue.seal.v1_1"
-author_word_matrix_file = "author_word.seal.v1_1"
-author_paper_matrix_file = "author_paper.seal.v1_1"
-name_instance_file = "name_instance.seal.v1_1"
-id_name_file = "id_name.seal.v1_1"
-name_statistics_file = "name_statistics.seal.v1_1"
+coauthor_matrix_file = "coauthor.seal" + '.' + version
+covenue_matrix_file = "covenue.seal" + '.' + version
+author_word_matrix_file = "author_word.seal" + '.' + version
+author_paper_matrix_file = "author_paper.seal" + '.' + version
+name_instance_file = "name_instance.seal" + '.' + version
+id_name_file = "id_name.seal" + '.' + version
+name_statistics_file = "name_statistics.seal" + '.' + version
+author_paper_stat_file = "author_paper_stat.seal" + '.' + version
+potential_duplicate_groups_file = "potential_duplicate_groups.seal" + '.' + version
+real_duplicate_groups_file = "real_duplicate_groups.seal" + '.' + version
 
 max_conference = 5222
 max_journal = 22228

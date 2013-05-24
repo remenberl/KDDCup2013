@@ -3,8 +3,27 @@ import itertools
 import re
 from taiwan import *
 from chinese import *
+from korean import *
+from nicknames import *
+
 
 asian_units = taiwan_units.union(chinese_units)
+asian_last_names = korean_last_names.union(taiwan_last_names.union(chinese_last_names))
+nickname_set = set()
+for name_group in nicknames:
+    for name1 in name_group:
+        for name2 in name_group:
+            if name1 != name2:
+                nickname_set.add((name1, name2))
+                nickname_set.add((name2, name1))
+
+
+def is_asian_name(last_name):
+    if last_name in asian_last_names:
+        return True
+    else:
+        return False
+
 
 class Name:
     """Represent a name with its alternatives and authors.
@@ -20,6 +39,15 @@ class Name:
         author_ids: a set of all author ids with the exact same name.
         similar_author_ids: a set of all author ids with similar names.
     """
+
+    def get_initials(self):
+        initials = ''
+        elements = self.name.split(' ')
+        for element in elements:
+            if len(element) >= 1:
+                initials += element[0]
+        return initials
+
     def __name_process(self, name, mode=1):
 
         # In case of M.I. Jordan
@@ -46,14 +74,6 @@ class Name:
         else:
             s = ' '.join([first_name, middle_name, last_name]).strip()
             return ' '.join(s.split())
-    
-
-    def __is_asian_name(self, last_name):
-        name_pool = set(['ding', 'lin', 'lee', 'li', 'liu', 'chen', 'zhang', 'xu', 'yang', 'lu', 'wang', 'chin', 'xie', 'cao'])
-        if last_name in name_pool:
-            return True
-        else:
-            return False
 
 
     def __init__(self, name, quick=False):
@@ -62,14 +82,31 @@ class Name:
         Parameters:
             name: The name read from the csv file, could be noisy.
         """
-        self.__name_process(name.replace('.', ' ').replace('-', ' '), 1)
+        if name.find('.') >= 0:
+            self.has_dot = True
+        else:
+            self.has_dot = False
+
+        if name.find('-') >= 0:
+            self.has_dash = True
+        else:
+            self.has_dash = False
+
+        if is_asian_name(name.strip().lower().split(' ')[-1]):
+            self.is_asian = True
+            self.__name_process(name.replace('.', ' ').replace('-', ''), 1)
+        else:
+            self.is_asian = False
+            self.__name_process(name.replace('.', ' ').replace('-', ' '), 1)
         if not quick:
             self.alternatives = set()
             self.author_ids = set()
             self.similar_author_ids = set()
             self.add_alternative(self.__name_process(name.replace('.', '').replace('-', ''), 2))
             self.add_alternative(self.__name_process(name.replace('.', '').replace('-', ' '), 2))
-            self.add_alternative(self.__name_process(name.replace('.', ' ').replace('-', ' '), 2))   
+            self.add_alternative(self.__name_process(name.replace('.', '').replace('-', ' '), 2))
+            self.add_alternative(self.__name_process(name.replace('.', ' ').replace('-', ' '), 2))
+            self.initials = self.get_initials()
 
     def __split_name(self, name):
         """Split a name into first, middle and last names."""
@@ -98,34 +135,36 @@ class Name:
             middle_name = ''
 
         # Given 'jia-lu liu' or 'jia lu liu', generate 'jialu liu'
-        if self.__is_asian_name(last_name):
-            first_name = first_name + ' ' + middle_name
-            elements = first_name.split(' ')
-            while True:
-                pos = -1
-                for i in xrange(len(elements) - 1):
-                    # print elements
-                    if elements[i] in asian_units:
-                        k = i
-                        while k + 1 < len(elements):
-                            if elements[k + 1] in asian_units:
-                                k = k + 1
-                                pos = i
-                            else:
-                                break
-                        new_element = elements.pop(i)
-                        while k - i > 0:
-                            new_element += elements.pop(i)
-                            k -= 1
-                        elements.insert(i, new_element)
-                        break
-                if pos == -1:
-                    break
-            first_name = elements[0]
-            if len(elements) > 1:
-                middle_name = ' '.join(elements[1:])
-            else:
+        if self.is_asian:
+            if len(middle_name) > 1 and middle_name.find(' ') < 0 and not self.has_dot and not self.has_dash:
+                first_name = (first_name + middle_name).replace(' ', '')
                 middle_name = ''
+        #     elements = first_name.split(' ')
+        #     while True:
+        #         pos = -1
+        #         for i in xrange(len(elements) - 1):
+        #             # print elements
+        #             if elements[i] in asian_units:
+        #                 k = i
+        #                 while k + 1 < len(elements):
+        #                     if elements[k + 1] in asian_units:
+        #                         k = k + 1
+        #                         pos = i
+        #                     else:
+        #                         break
+        #                 new_element = elements.pop(i)
+        #                 while k - i > 0:
+        #                     new_element += elements.pop(i)
+        #                     k -= 1
+        #                 elements.insert(i, new_element)
+        #                 break
+        #         if pos == -1:
+        #             break
+        #     first_name = elements[0]
+        #     if len(elements) > 1:
+        #         middle_name = ' '.join(elements[1:])
+        #     else:
+        #         middle_name = ''
         return (first_name, middle_name, last_name)
 
 
