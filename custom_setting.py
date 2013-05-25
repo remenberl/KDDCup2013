@@ -22,6 +22,7 @@ serialization_dir = "./serialize/"
 coauthor_matrix_file = "coauthor.seal" + '.' + version
 covenue_matrix_file = "covenue.seal" + '.' + version
 author_word_matrix_file = "author_word.seal" + '.' + version
+author_venue_matrix_file = "author_venue.seal" + '.' + version
 author_paper_matrix_file = "author_paper.seal" + '.' + version
 name_instance_file = "name_instance.seal" + '.' + version
 id_name_file = "id_name.seal" + '.' + version

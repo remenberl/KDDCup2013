@@ -19,7 +19,6 @@ for name_group in nicknames:
                 nickname_set.add((name1, name2))
                 nickname_set.add((name2, name1))
 
-
 def is_asian_name(last_name):
     if last_name in asian_last_names:
         return True

@@ -13,6 +13,8 @@ def run_from_step(step):
         coauthor_matrix,
         covenue_matrix,
         author_word_matrix,
+        author_venue_matrix,
+        author_paper_matrix,
         author_paper_stat) = load_files()
 
     print "\nStep 2/6: Find similar ids to increase recall"
@@ -47,7 +49,7 @@ def run_from_step(step):
     print "\nStep 4/6: Find and merge local clusters"
     if step <= 4:
         (real_duplicate_groups, similarity_score_dict) = local_clustering(potential_duplicate_groups, author_paper_stat, \
-            name_instance_dict, id_name_dict, coauthor_matrix, covenue_matrix, author_word_matrix)
+            name_instance_dict, id_name_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
         print "\tSaving files generated in this step for debug."
         cPickle.dump(
                 real_duplicate_groups,
@@ -63,15 +65,16 @@ def run_from_step(step):
  
     print "\nStep 5/6: Obtain the closure, then filter noisy names"   
     authors_duplicates_dict = merge_local_clusters(real_duplicate_groups, id_name_dict)
-    final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_score_dict, coauthor_matrix, covenue_matrix, author_word_matrix)
-    find_closure(authors_duplicates_dict)
-    final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_score_dict, coauthor_matrix, covenue_matrix, author_word_matrix)
-    find_closure(authors_duplicates_dict)
-    final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_score_dict, coauthor_matrix, covenue_matrix, author_word_matrix)
+    iter_num = 5
+    while iter_num > 0:
+        refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
+        find_closure(authors_duplicates_dict)
+        iter_num -= 1
+    refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
   
     print "\nStep 6/6: Generate submission files"
     save_result(authors_duplicates_dict, name_instance_dict, id_name_dict)
        
 
 if __name__ == '__main__':
-    run_from_step(1)
+    run_from_step(5)

@@ -173,6 +173,8 @@ def load_covenue_files(id_name_dict, author_paper_matrix):
         print "\tReading in the serialization files."
         covenue_matrix = cPickle.load(open(
             serialization_dir + covenue_matrix_file, "rb"))
+        author_venue_matrix = cPickle.load(open(
+            serialization_dir + author_venue_matrix_file, "rb"))
     else:
         print "\tSerialization files related to author_venue do not exist."
         # The maximum id for journal is 5222 and for conference is 22228
@@ -210,8 +212,10 @@ def load_covenue_files(id_name_dict, author_paper_matrix):
         cPickle.dump(
             covenue_matrix,
             open(serialization_dir + covenue_matrix_file, "wb"), 2)
-
-    return covenue_matrix
+        cPickle.dump(
+            author_venue_matrix,
+            open(serialization_dir + author_venue_matrix_file, "wb"), 2)
+    return (covenue_matrix, author_venue_matrix)
 
 
 def load_author_word_files(id_name_dict, author_paper_matrix):
@@ -367,14 +371,16 @@ def load_files():
     print
     (author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, name_statistics, author_paper_stat) = load_coauthor_files(name_instance_dict, id_name_dict, name_statistics)
     print
-    covenue_matrix = load_covenue_files(id_name_dict, author_paper_matrix)
+    (covenue_matrix, author_venue_matrix) = load_covenue_files(id_name_dict, author_paper_matrix)
     print
     author_word_matrix = load_author_word_files(id_name_dict, author_paper_matrix)
 
     return (name_instance_dict, id_name_dict, name_statistics,
             coauthor_matrix,
             covenue_matrix,
-            author_word_matrix, author_paper_stat)
+            author_word_matrix, 
+            author_venue_matrix,
+            author_paper_matrix, author_paper_stat)
 
 
 def save_result(authors_duplicates_dict, name_instance_dict, id_name_dict):
