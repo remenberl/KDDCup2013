@@ -12,7 +12,9 @@ asian_last_names = korean_last_names.union(taiwan_last_names.union(chinese_last_
 nickname_set = set()
 for name_group in nicknames:
     for name1 in name_group:
+        name1 = name1.lower()
         for name2 in name_group:
+            name2 = name2.lower()
             if name1 != name2:
                 nickname_set.add((name1, name2))
                 nickname_set.add((name2, name1))

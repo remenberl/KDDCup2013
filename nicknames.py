@@ -52,6 +52,7 @@ nicknames = (
     ('Michael', 'Mike'),
     ('Mitchell', 'Mitch'),
     ('Nicholas', 'Nick'),
+    ('Natalia', 'Natalya'),
     ('Patricia', 'Pat', 'Patty', 'Pati'),
     ('Patrick', 'Pat'),
     ('Peter', 'Pete'),

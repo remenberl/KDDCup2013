@@ -46,27 +46,32 @@ def run_from_step(step):
 
     print "\nStep 4/6: Find and merge local clusters"
     if step <= 4:
-        real_duplicate_groups = local_clustering(potential_duplicate_groups, author_paper_stat, \
+        (real_duplicate_groups, similarity_score_dict) = local_clustering(potential_duplicate_groups, author_paper_stat, \
             name_instance_dict, id_name_dict, coauthor_matrix, covenue_matrix, author_word_matrix)
         print "\tSaving files generated in this step for debug."
         cPickle.dump(
                 real_duplicate_groups,
                 open(serialization_dir + real_duplicate_groups_file, "wb"), 2)
+        cPickle.dump(
+                similarity_score_dict,
+                open(serialization_dir + similarity_score_dict_file, "wb"), 2)
     else:
         real_duplicate_groups = cPickle.load(
                 open(serialization_dir + real_duplicate_groups_file, "rb"))
+        similarity_score_dict = cPickle.load(
+                open(serialization_dir + similarity_score_dict_file, "rb"))
  
     print "\nStep 5/6: Obtain the closure, then filter noisy names"   
     authors_duplicates_dict = merge_local_clusters(real_duplicate_groups, id_name_dict)
-    final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics)
+    final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_score_dict, coauthor_matrix, covenue_matrix, author_word_matrix)
     find_closure(authors_duplicates_dict)
-    final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics)
+    final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_score_dict, coauthor_matrix, covenue_matrix, author_word_matrix)
     find_closure(authors_duplicates_dict)
-    final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics)
+    final_refine(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_score_dict, coauthor_matrix, covenue_matrix, author_word_matrix)
   
     print "\nStep 6/6: Generate submission files"
     save_result(authors_duplicates_dict, name_instance_dict, id_name_dict)
        
 
 if __name__ == '__main__':
-    run_from_step(4)
+    run_from_step(1)

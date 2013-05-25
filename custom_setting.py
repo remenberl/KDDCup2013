@@ -17,7 +17,7 @@ paper_word_weight = 10
 merge_threshold = 0.000000001
 word_title_count_threshold = 100
 
-version = "v1_7"
+version = "v1_8"
 serialization_dir = "./serialize/"
 coauthor_matrix_file = "coauthor.seal" + '.' + version
 covenue_matrix_file = "covenue.seal" + '.' + version
@@ -29,6 +29,7 @@ name_statistics_file = "name_statistics.seal" + '.' + version
 author_paper_stat_file = "author_paper_stat.seal" + '.' + version
 potential_duplicate_groups_file = "potential_duplicate_groups.seal" + '.' + version
 real_duplicate_groups_file = "real_duplicate_groups.seal" + '.' + version
+similarity_score_dict_file = "similarity_score.seal" + '.' + version
 
 max_conference = 5222
 max_journal = 22228
