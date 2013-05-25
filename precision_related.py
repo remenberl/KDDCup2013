@@ -98,11 +98,11 @@ def compute_similarity_score(author_A, author_B, author_paper_matrix, coauthor_m
 
     similarity = (1000000 * normalized_feature_A[0].multiply(normalized_feature_B[0]).sum(),
              10000 * normalized_feature_A[1].multiply(normalized_feature_B[1]).sum(),
-             100000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(),
+             1000000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(),
              10000 * normalized_feature_A[3].multiply(normalized_feature_B[3]).sum(),
              normalized_feature_A[3].multiply(normalized_feature_B[1]).sum(),
              normalized_feature_A[1].multiply(normalized_feature_B[3]).sum(),
-             10000 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum())
+             10000 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum(), 0.00001)
 
     return similarity
 
@@ -121,7 +121,7 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
         A set containing lots of tuples describing the real duplicate group.
     """
     count = 0
-    statistic = [0] * 7
+    statistic = [0] * 8
     real_duplicate_groups = set()
 
     normalized_feature_dict = {}
@@ -261,7 +261,7 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, sim
     count = 0
     for author_id in conflict_ids:
         pool = authors_duplicates_dict[author_id]
-        sorted(pool, key=lambda candi: -similarity_dict[tuple(sorted((author_id, candi)))])
+        pool = sorted(pool, key=lambda candi: -similarity_dict[tuple(sorted((author_id, candi)))])
         group = [author_id]
         for candidate in pool:
             group.append(candidate)
