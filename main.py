@@ -67,14 +67,13 @@ def run_from_step(step):
     authors_duplicates_dict = merge_local_clusters(real_duplicate_groups, id_name_dict)
     iter_num = 5
     while iter_num > 0:
-        refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
         find_closure(authors_duplicates_dict)
+        refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
         iter_num -= 1
-    refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
-  
+
     print "\nStep 6/6: Generate submission files"
     save_result(authors_duplicates_dict, name_instance_dict, id_name_dict)
        
 
 if __name__ == '__main__':
-    run_from_step(5)
+    run_from_step(4)

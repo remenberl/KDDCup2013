@@ -6,6 +6,7 @@ from difflib import SequenceMatcher
 import re
 import itertools
 
+normalized_feature_dict = {}
 
 def is_substr(s1, s2):
     """Does `s1` appear in sequence in `s2`?"""
@@ -71,31 +72,39 @@ def name_group_comparable(group, name_instance_dict, id_name_dict):
 
 
 def compute_similarity_score(author_A, author_B, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix):
-    feature_A = (author_paper_matrix.getrow(author_A), coauthor_matrix.getrow(author_A), author_venue_matrix.getrow(author_A), covenue_matrix.getrow(author_A), author_word_matrix.getrow(author_A))
-    normalized_feature_A = (
-        normalize(feature_A[0], norm='l2', axis=1),
-        normalize(feature_A[1], norm='l2', axis=1),
-        normalize(feature_A[2], norm='l2', axis=1),
-        normalize(feature_A[3], norm='l2', axis=1),
-        normalize(feature_A[4], norm='l2', axis=1))
+    if author_A not in normalized_feature_dict:
+        feature_A = (author_paper_matrix.getrow(author_A), coauthor_matrix.getrow(author_A), author_venue_matrix.getrow(author_A), covenue_matrix.getrow(author_A), author_word_matrix.getrow(author_A))
+        normalized_feature_A = (
+            normalize(feature_A[0], norm='l2', axis=1),
+            normalize(feature_A[1], norm='l2', axis=1),
+            normalize(feature_A[2], norm='l2', axis=1),
+            normalize(feature_A[3], norm='l2', axis=1),
+            normalize(feature_A[4], norm='l2', axis=1))
+        normalized_feature_dict[author_A] = normalized_feature_A
+    else:
+        normalized_feature_A = normalized_feature_dict[author_A]
 
-    feature_B = (author_paper_matrix.getrow(author_B), coauthor_matrix.getrow(author_B), author_venue_matrix.getrow(author_B), covenue_matrix.getrow(author_B), author_word_matrix.getrow(author_B))
-    normalized_feature_B = (
-        normalize(feature_B[0], norm='l2', axis=1),
-        normalize(feature_B[1], norm='l2', axis=1),
-        normalize(feature_B[2], norm='l2', axis=1),
-        normalize(feature_B[3], norm='l2', axis=1),
-        normalize(feature_A[4], norm='l2', axis=1))
- 
+    if author_B not in normalized_feature_dict:
+        feature_B = (author_paper_matrix.getrow(author_B), coauthor_matrix.getrow(author_B), author_venue_matrix.getrow(author_B), covenue_matrix.getrow(author_B), author_word_matrix.getrow(author_B))
+        normalized_feature_B = (
+            normalize(feature_B[0], norm='l2', axis=1),
+            normalize(feature_B[1], norm='l2', axis=1),
+            normalize(feature_B[2], norm='l2', axis=1),
+            normalize(feature_B[3], norm='l2', axis=1),
+            normalize(feature_B[4], norm='l2', axis=1))
+        normalized_feature_dict[author_B] = normalized_feature_B
+    else:
+        normalized_feature_B = normalized_feature_dict[author_B]
+
     similarity = (1000000 * normalized_feature_A[0].multiply(normalized_feature_B[0]).sum(),
-                 10000 * normalized_feature_A[1].multiply(normalized_feature_B[1]).sum(),
-                 1000000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(),
-                 10000 * normalized_feature_A[3].multiply(normalized_feature_B[3]).sum(),
-                 normalized_feature_A[3].multiply(normalized_feature_B[1]).sum(),
-                 normalized_feature_A[1].multiply(normalized_feature_B[3]).sum(),
-                 10000 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum())
+             10000 * normalized_feature_A[1].multiply(normalized_feature_B[1]).sum(),
+             100000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(),
+             10000 * normalized_feature_A[3].multiply(normalized_feature_B[3]).sum(),
+             normalized_feature_A[3].multiply(normalized_feature_B[1]).sum(),
+             normalized_feature_A[1].multiply(normalized_feature_B[3]).sum(),
+             10000 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum())
 
-    return max(similarity)
+    return similarity
 
 
 def local_clustering(potential_duplicate_groups, author_paper_stat, name_instance_dict, id_name_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix):
@@ -133,43 +142,10 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
         if author_A not in author_paper_stat or author_B not in author_paper_stat:
             continue
 
-
         if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]]):
             continue
 
-
-        if author_A not in normalized_feature_dict:
-            feature_A = (author_paper_matrix.getrow(author_A), coauthor_matrix.getrow(author_A), author_venue_matrix.getrow(author_A), covenue_matrix.getrow(author_A), author_word_matrix.getrow(author_A))
-            normalized_feature_A = (
-                normalize(feature_A[0], norm='l2', axis=1),
-                normalize(feature_A[1], norm='l2', axis=1),
-                normalize(feature_A[2], norm='l2', axis=1),
-                normalize(feature_A[3], norm='l2', axis=1),
-                normalize(feature_A[4], norm='l2', axis=1))
-            normalized_feature_dict[author_A] = normalized_feature_A
-        else:
-            normalized_feature_A = normalized_feature_dict[author_A]
-
-        if author_B not in normalized_feature_dict:
-            feature_B = (author_paper_matrix.getrow(author_B), coauthor_matrix.getrow(author_B), author_venue_matrix.getrow(author_B), covenue_matrix.getrow(author_B), author_word_matrix.getrow(author_B))
-            normalized_feature_B = (
-                normalize(feature_B[0], norm='l2', axis=1),
-                normalize(feature_B[1], norm='l2', axis=1),
-                normalize(feature_B[2], norm='l2', axis=1),
-                normalize(feature_B[3], norm='l2', axis=1),
-                normalize(feature_A[4], norm='l2', axis=1))
-            normalized_feature_dict[author_B] = normalized_feature_B
-        else:
-            normalized_feature_B = normalized_feature_dict[author_B]
-
-        similarity = (1000000 * normalized_feature_A[0].multiply(normalized_feature_B[0]).sum(),
-                 10000 * normalized_feature_A[1].multiply(normalized_feature_B[1]).sum(),
-                 1000000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(),
-                 10000 * normalized_feature_A[3].multiply(normalized_feature_B[3]).sum(),
-                 normalized_feature_A[3].multiply(normalized_feature_B[1]).sum(),
-                 normalized_feature_A[1].multiply(normalized_feature_B[3]).sum(),
-                 10000 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum())
-
+        similarity = compute_similarity_score(author_A, author_B, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
         if max(similarity) > merge_threshold:
             real_duplicate_groups.add(potential_duplicate_group)
             statistic[similarity.index(max(similarity))] += 1
@@ -278,7 +254,7 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, sim
         pool = authors_duplicates_dict[author_id]
         for candi in pool:
             if tuple(sorted((author_id, candi))) not in similarity_dict:
-                similarity_dict[tuple(sorted((author_id, candi)))] = compute_similarity_score(author_id, candi, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
+                similarity_dict[tuple(sorted((author_id, candi)))] = max(compute_similarity_score(author_id, candi, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix))
         max_similarity_dict[author_id] = max([similarity_dict[tuple(sorted((author_id, candi)))] for candi in authors_duplicates_dict[author_id]])
 
     conflict_ids = sorted(conflict_ids, key=lambda candi: -max_similarity_dict[candi])
