@@ -4,7 +4,7 @@ import re
 from taiwan import *
 from chinese import *
 from korean import *
-from nicknames import *
+from nicknames_v2 import *
 
 
 asian_units = taiwan_units.union(chinese_units)

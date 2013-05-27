@@ -39,43 +39,44 @@ def add_similar_ids_under_name(name_instance_dict):
                     name_instance_dict[author_name].add_similar_author_id(id)
 
 
-    # length = len(name_instance_dict) - len(virtual_name_set)
-    # init_full_dict = {}
-    # full_init_dict = {}
-    # count = 0
-    # print "\tBuilding name initials mapping."
-    # for (author_name, name_instance) in name_instance_dict.iteritems():
-    #     if author_name not in virtual_name_set:
-    #         initials = ''
-    #         # elements = author_name.split(' ')
-    #         # for element in elements:
-    #         #     if len(element) > 1:
-    #         #         initials += element[0]
-    #         if name_instance.first_name != '':
-    #             initials += name_instance.first_name[0]
-    #         if name_instance.middle_name != '':
-    #             initials += name_instance.middle_name[0]
-    #         if name_instance.last_name != '':
-    #             initials += name_instance.last_name[0]
-    #         init_full_dict.setdefault(initials, set()).add(author_name)
-    #         full_init_dict[author_name] = initials
+    length = len(name_instance_dict) - len(virtual_name_set)
+    init_full_dict = {}
+    full_init_dict = {}
+    count = 0
+    print "\tBuilding name initials mapping."
+    for (author_name, name_instance) in name_instance_dict.iteritems():
+        if author_name not in virtual_name_set:
+            initials = ''
+            # elements = author_name.split(' ')
+            # for element in elements:
+            #     if len(element) > 1:
+            #         initials += element[0]
+            if name_instance.first_name != '':
+                initials += name_instance.first_name[0]
+            if name_instance.middle_name != '':
+                initials += name_instance.middle_name[0]
+            if name_instance.last_name != '':
+                initials += name_instance.last_name[0]
+            init_full_dict.setdefault(initials, set()).add(author_name)
+            full_init_dict[author_name] = initials
 
-    # print "\tStart arbitrary name comparison:"
-    # count = 0
-    # for (author_name, name_instance) in name_instance_dict.iteritems():
-    #     if author_name not in virtual_name_set:
-    #         pool = init_full_dict[full_init_dict[author_name]]
-    #         for candidate in pool:
-    #             if SequenceMatcher(None, author_name, candidate).ratio() >= 0.9:
-    #                     name_instance_candidate = name_instance_dict[candidate]
-    #                     for id in name_instance.author_ids:
-    #                         name_instance_candidate.add_similar_author_id(id)
-    #                     for id in name_instance_candidate.author_ids:
-    #                         name_instance.add_similar_author_id(id)
-    #         count += 1
-    #         if count % 1000 == 0:
-    #             print "\t\tFinish matching " + str(float(count)/length*100)\
-    #                 + "% (" + str(count) + "/" + str(length) + ") names with the whole database."
+    print "\tStart arbitrary name comparison:"
+    count = 0
+    for (author_name, name_instance) in name_instance_dict.iteritems():
+        if author_name not in virtual_name_set:
+            pool = init_full_dict[full_init_dict[author_name]]
+            for candidate in pool:
+                if author_name[:-1] == candidate:
+                # if SequenceMatcher(None, author_name, candidate).ratio() >= 0.9:
+                        name_instance_candidate = name_instance_dict[candidate]
+                        for id in name_instance.author_ids:
+                            name_instance_candidate.add_similar_author_id(id)
+                        for id in name_instance_candidate.author_ids:
+                            name_instance.add_similar_author_id(id)
+            count += 1
+            if count % 1000 == 0:
+                print "\t\tFinish matching " + str(float(count)/length*100)\
+                    + "% (" + str(count) + "/" + str(length) + ") names with the whole database."
 
 
 def create_potential_duplicate_groups(name_instance_dict):

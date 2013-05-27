@@ -17,7 +17,7 @@ paper_word_weight = 10
 merge_threshold = 0.000000001
 word_title_count_threshold = 100
 
-version = "v1_8"
+version = "v1_9"
 serialization_dir = "./serialize/"
 coauthor_matrix_file = "coauthor.seal" + '.' + version
 covenue_matrix_file = "covenue.seal" + '.' + version
