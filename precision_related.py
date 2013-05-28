@@ -17,6 +17,9 @@ def name_comparable(name_instance_A, name_instance_B):
     name_A = name_instance_A.name
     name_B = name_instance_B.name
 
+    if name_instance_A.last_name == name_instance_B.first_name and name_instance_A.middle_name == name_instance_B.middle_name:
+        return True
+
     if name_instance_A.is_asian and name_instance_B.is_asian:
         # Han Liu and Huan Liu
         if name_instance_A.middle_name == '' and name_instance_B.middle_name == '':
@@ -39,9 +42,12 @@ def name_comparable(name_instance_A, name_instance_B):
 
     # if is_substr(name_A.replace(' ', ''), name_B.replace(' ', '')) and len(name_A) > 10 and len(name_B) > 10:
     #     return True
-
-    if not is_substr(name_instance_A.initials, name_instance_B.initials):
-        return False
+    if (name_instance_A.first_name, name_instance_B.first_name) not in nickname_set:
+        if not is_substr(name_instance_A.initials, name_instance_B.initials):
+            return False
+    else:
+        if not is_substr(name_instance_A.initials[1:], name_instance_B.initials[1:]):
+            return False
 
     # Chris Ding and Cui Ding
     if len(name_instance_A.first_name) > 1 and len(name_instance_B.first_name) > 1:
@@ -49,8 +55,12 @@ def name_comparable(name_instance_A, name_instance_B):
             if (name_instance_A.first_name, name_instance_B.first_name) not in nickname_set:
                 if (name_instance_A.first_name.find(name_instance_B.first_name) < 0 and name_instance_A.first_name.find(name_instance_B.first_name) < 0) \
                         or (name_instance_A.middle_name == '' and name_instance_B.middle_name == ''):
-                    if SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.first_name[1:]).ratio() < 0.95:
-                        return False
+                    if not name_instance_A.bad_name_flag and not name_instance_B.bad_name_flag:
+                        if SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.first_name[1:]).ratio() < 0.93:
+                            return False
+                    else:
+                        if SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.first_name[1:]).ratio() < 0.5:
+                            return False
 
     # Michael Ia Jordan and Michael Ib jordan
     if len(name_instance_A.middle_name) > 1 and len(name_instance_B.middle_name) > 1:
