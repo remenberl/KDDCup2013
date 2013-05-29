@@ -4,12 +4,13 @@ import re
 from taiwan import *
 from chinese import *
 from korean import *
-from nicknames import *
+from nicknames_v2 import *
 
 
 asian_units = taiwan_units.union(chinese_units)
 asian_last_names = korean_last_names.union(taiwan_last_names.union(chinese_last_names))
 nickname_set = set()
+nickname_dict = {}
 for name_group in nicknames:
     for name1 in name_group:
         name1 = name1.lower()
@@ -18,6 +19,9 @@ for name_group in nicknames:
             if name1 != name2:
                 nickname_set.add((name1, name2))
                 nickname_set.add((name2, name1))
+                nickname_dict.setdefault(name1, set()).add(name2)
+                nickname_dict.setdefault(name2, set()).add(name1)
+
 
 def is_asian_name(last_name):
     if last_name in asian_last_names:
@@ -108,6 +112,7 @@ class Name:
             self.add_alternative(self.__name_process(name.replace('.', '').replace('-', ' '), 2))
             self.add_alternative(self.__name_process(name.replace('.', ' ').replace('-', ' '), 2))
             self.initials = self.get_initials()
+            self.bad_name_flag = False
 
     def __split_name(self, name):
         """Split a name into first, middle and last names."""
@@ -224,6 +229,9 @@ class Name:
                        last_name]
                        ).strip())
 
+        #e.g., Michael Jr. Jordan
+        candidates.add(' '.join([last_name, middle_name, first_name]).strip())
+        
         candidates_new = set()
         for candidate in candidates:
             candidates_new.add(' '.join(candidate.split()))
@@ -253,6 +261,8 @@ class Name:
             return self.alternatives
         pool = [self.first_name, self.middle_name, self.last_name]
         self.alternatives = self.alternatives.union(self.__genearte_possible_names(pool))
+        # pool = [self.last_name, self.middle_name, self.first_name]
+        # self.alternatives = self.alternatives.union(self.__genearte_possible_names(pool))
         # for permutation in itertools.permutations(pool):
         #     self.alternatives = self.alternatives.union(
         #         self.__genearte_possible_names(permutation))

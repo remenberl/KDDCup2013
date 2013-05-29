@@ -19,7 +19,7 @@ def run_from_step(step):
 
     print "\nStep 2/6: Find similar ids to increase recall"
     if step <= 2:
-        add_similar_ids_under_name(name_instance_dict)
+        add_similar_ids_under_name(name_instance_dict, id_name_dict)
         print "\tSaving files generated in this step for debug."
         cPickle.dump(
                 name_instance_dict,
@@ -76,4 +76,4 @@ def run_from_step(step):
        
 
 if __name__ == '__main__':
-    run_from_step(4)
+    run_from_step(1)
