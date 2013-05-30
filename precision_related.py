@@ -12,13 +12,53 @@ def is_substr(s1, s2):
     """Does `s1` appear in sequence in `s2`?"""
     return bool(re.search(".*".join(s1), s2)) or bool(re.search(".*".join(s2), s1))
 
+def my_string_match_score(s1, s2):
+    elements_s1 = s1.split(" ")
+    elements_s2 = s2.split(" ")
 
-def name_comparable(name_instance_A, name_instance_B):
+    count = 0
+    for element1 in elements_s1:
+        for element2 in elements_s2:
+            if (element1, element2) in nickname_set:
+                count += 1
+                continue
+            if element1[0] != element2[0]:
+                continue
+            if len(element1) == 1 and len(element2) == 1:
+                count += 1
+            if len(element1) == 1 and len(element2) != 1:
+                count += 1
+            if len(element1) != 1 and len(element2) == 1:
+                count += 1
+            if len(element1) != 1 and len(element2) != 1:
+                if SequenceMatcher(None, element1, element2).ratio() > 0.85:
+                    count += 1
+    if elements_s1[-1] != elements_s2[-1]:
+        if SequenceMatcher(None, elements_s1[-1], elements_s2[-1]).ratio() <= 0.85:
+            if elements_s1[-1][:-1] == elements_s2[-1][:-1] \
+                    or elements_s1[-1][:-1] == elements_s2[-1] \
+                    or elements_s1[-1] == elements_s2[-1][:-1]:
+                count += 1
+    return count
+
+
+
+def is_name_reorder(name_instance_A, name_instance_B):
+    name_unit_set = set()
+    name_unit_set.add(name_instance_A.first_name)
+    name_unit_set.add(name_instance_A.middle_name)
+    name_unit_set.add(name_instance_A.last_name)
+    
+    if name_instance_B.first_name in name_unit_set and name_instance_B.middle_name in name_unit_set and name_instance_B.last_name in name_unit_set:
+        return True
+    else:
+        return False
+
+def single_name_comparable(name_instance_A, name_instance_B):
     name_A = name_instance_A.name
     name_B = name_instance_B.name
 
-    if name_instance_A.last_name == name_instance_B.first_name and name_instance_A.middle_name == name_instance_B.middle_name:
-        return True
+
 
     if name_instance_A.is_asian and name_instance_B.is_asian:
         # Han Liu and Huan Liu
@@ -39,6 +79,12 @@ def name_comparable(name_instance_A, name_instance_B):
 
     if name_B.find(name_A.replace(' ', '')) >= 0 or name_A.find(name_B.replace(' ', '')) >= 0:
         return True
+
+    if name_A.replace(' ', '') == name_B.replace(' ', ''):
+        return True
+
+    if my_string_match_score(name_instance_A.name, name_instance_B.name) <= 1:
+        return False
 
     # if is_substr(name_A.replace(' ', ''), name_B.replace(' ', '')) and len(name_A) > 10 and len(name_B) > 10:
     #     return True
@@ -69,8 +115,74 @@ def name_comparable(name_instance_A, name_instance_B):
                 if SequenceMatcher(None, name_instance_A.middle_name[1:], name_instance_B.middle_name[1:]).ratio() <= 0.3:
                     return False
 
+    # if len(name_instance_A.last_name) > 1 and len(name_instance_B.last_name) > 1:
+    #     if name_instance_A.last_name[0] == name_instance_B.last_name[0]:
+    #         if not is_substr(name_instance_A.last_name.replace(' ', ''), name_instance_B.last_name.replace(' ', '')):
+    #             if SequenceMatcher(None, name_instance_A.last_name[1:], name_instance_B.last_name[1:]).ratio() < 0.5:
+    #                 return False
+
+    if name_instance_A.first_name[0] != name_instance_B.first_name[0]:
+        if len(name_instance_B.middle_name) > 0:
+            if name_instance_A.first_name[0] == name_instance_B.middle_name[0]:
+                if len(name_instance_A.first_name) > 1 and len(name_instance_B.middle_name) > 1:
+                    if my_string_match_score(name_instance_A.first_name, name_instance_B.middle_name) == 0:
+                        return False
+                    # if SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.middle_name[1:]).ratio() <= 0.9:
+                    #         return False
+        if len(name_instance_A.middle_name) > 0:
+            if name_instance_B.first_name[0] == name_instance_A.middle_name[0]:
+                if len(name_instance_B.first_name) > 1 and len(name_instance_A.middle_name) > 1:
+                    if my_string_match_score(name_instance_A.middle_name, name_instance_B.first_name) == 0:
+                        # if SequenceMatcher(None, name_instance_A.middle_name[1:], name_instance_B.first_name[1:]).ratio() <= 0.9:
+                        return False
+
+    if name_instance_A.last_name != name_instance_B.last_name:
+        if SequenceMatcher(None, name_instance_A.last_name[1:], name_instance_B.last_name[1:]).ratio() <= 0.5:
+            return False
+        # if name_instance_A.middle_name != name_instance_B.middle_name and name_instance_A.first_name != name_instance_B.first_name:
+        #     return False
+
     return True
 
+
+def __name_comparable(name_instance_A, name_instance_B):
+    if single_name_comparable(name_instance_A, name_instance_B):
+        return True
+    
+    name_A = '- '.join([name_instance_A.last_name, name_instance_A.middle_name, name_instance_A.first_name]).strip()
+    new_name_instance_A = Name(name_A)
+    new_name_instance_A.is_asian = name_instance_A.is_asian
+    if single_name_comparable(new_name_instance_A, name_instance_B):
+        return True
+
+    name_A = '- '.join([name_instance_A.middle_name, name_instance_A.last_name, name_instance_A.first_name]).strip()
+    new_name_instance_A = Name(name_A)
+    new_name_instance_A.is_asian = name_instance_A.is_asian
+    if single_name_comparable(new_name_instance_A, name_instance_B):
+        return True
+
+    name_A = '- '.join([name_instance_A.last_name, name_instance_A.first_name, name_instance_A.middle_name]).strip()
+    new_name_instance_A = Name(name_A)
+    new_name_instance_A.is_asian = name_instance_A.is_asian
+    if single_name_comparable(new_name_instance_A, name_instance_B):
+        return True
+
+    name_A = '- '.join([name_instance_A.middle_name, name_instance_A.first_name, name_instance_A.last_name]).strip()
+    new_name_instance_A = Name(name_A)
+    if new_name_instance_A.name == name_instance_B.name:
+        return True
+
+    name_A = '- '.join([name_instance_A.first_name, name_instance_A.last_name, name_instance_A.middle_name]).strip()
+    new_name_instance_A = Name(name_A)
+    new_name_instance_A.is_asian = name_instance_A.is_asian
+    if single_name_comparable(new_name_instance_A, name_instance_B):
+        return True
+
+    return False
+
+def name_comparable(name_instance_A, name_instance_B):
+    return __name_comparable(name_instance_A, name_instance_B) or __name_comparable(name_instance_B, name_instance_A)
+    
 
 def name_group_comparable(group, name_instance_dict, id_name_dict):
     for author_A in group:

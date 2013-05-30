@@ -37,6 +37,11 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                 # of the current name.
                 for id in name_instance_dict[alternative].author_ids:
                     name_instance_dict[author_name].add_similar_author_id(id)
+    # for (author_name, name_instance) in name_instance_dict.iteritems():
+    #     if author_name in virtual_name_set:
+    #         for id in name_instance.similar_author_ids:
+    #             for id in name_instance.similar_author_ids:
+    #                 name_instance_dict[id_name_dictp[id][0]].add_similar_author_id(id)
 
 
     length = len(name_instance_dict) - len(virtual_name_set)
@@ -97,21 +102,21 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
     print "\t\tIn total there exist " + str(count)\
         + " names containing question marks or non askii characters."
 
-    # count = 0
-    # for (author_name, name_instance) in name_instance_dict.iteritems():
-    #     if name_instance.first_name in nickname_dict:
-    #         for nickname in nickname_dict[name_instance.first_name]:
-    #             s = ' '.join([nickname, name_instance.middle_name, name_instance.last_name]).strip()
-    #             new_name = ' '.join(s.split())
-    #             if new_name in name_instance_dict:
-    #                 for id in name_instance_dict[new_name].author_ids:
-    #                     name_instance.add_similar_author_id(id)
-    #                 for id in name_instance.author_ids:
-    #                     name_instance_dict[new_name].add_similar_author_id(id)
-    #                 count += 1
-    #                 if count % 100 == 0:
-    #                     print "\t\tFinish matching " + str(count)\
-    #                         + " pairs of nicknames."
+    count = 0
+    for (author_name, name_instance) in name_instance_dict.iteritems():
+        if name_instance.first_name in nickname_dict:
+            for nickname in nickname_dict[name_instance.first_name]:
+                s = ' '.join([nickname, name_instance.middle_name, name_instance.last_name]).strip()
+                new_name = ' '.join(s.split())
+                if new_name in name_instance_dict:
+                    for id in name_instance_dict[new_name].author_ids:
+                        name_instance.add_similar_author_id(id)
+                    for id in name_instance.author_ids:
+                        name_instance_dict[new_name].add_similar_author_id(id)
+                    count += 1
+                    if count % 100 == 0:
+                        print "\t\tFinish matching " + str(count)\
+                            + " pairs of nicknames."
 
 def create_potential_duplicate_groups(name_instance_dict):
     """Create potential duplicate groups for local clustering algorithm to analyse.

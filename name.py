@@ -97,7 +97,8 @@ class Name:
         else:
             self.has_dash = False
 
-        if is_asian_name(name.strip().lower().split(' ')[-1]):
+        name = name.replace(',', ' ')
+        if is_asian_name(name.strip().lower().split(' ')[-1]) or is_asian_name(name.strip().lower().split(' ')[0]):
             self.is_asian = True
             self.__name_process(name.replace('.', ' ').replace('-', ''), 1)
         else:
@@ -118,7 +119,8 @@ class Name:
         """Split a name into first, middle and last names."""
         tokens = name.split(' ')
         suffix = ['jr', 'sr']
-        suffix2 = ['i', 'ii', 'iii', 'iv', 'v', 'first', 'second', 'third']
+        # suffix2 = ['i', 'ii', 'iii', 'iv', 'v', 'first', 'second', 'third']
+        suffix2 = ['ii', 'iii', 'iv', 'first', 'second', 'third']
         elements = [token for token in tokens if token not in suffix]
         if len(elements) > 0 and elements[-1] in suffix2:
             del elements[-1]
@@ -142,9 +144,25 @@ class Name:
 
         # Given 'jia-lu liu' or 'jia lu liu', generate 'jialu liu'
         if self.is_asian:
-            if len(middle_name) > 1 and middle_name.find(' ') < 0 and not self.has_dot and not self.has_dash:
-                first_name = (first_name + middle_name).replace(' ', '')
-                middle_name = ''
+            if last_name in asian_last_names:
+                if len(middle_name) > 1 and middle_name.find(' ') < 0 and not self.has_dot and not self.has_dash:
+                    for element in elements:
+                        if element in nickname_dict and element != last_name:
+                            if len(element) > 3:
+                                break
+                    else:
+                        first_name = (first_name + middle_name).replace(' ', '')
+                        middle_name = ''
+            else:
+                if first_name in asian_last_names:
+                    if len(middle_name) > 1 and middle_name.find(' ') < 0 and not self.has_dot and not self.has_dash:
+                        for element in elements:
+                            if element in nickname_dict and element != first_name:
+                                if len(element) > 3:
+                                    break
+                        else:
+                            last_name = (middle_name + last_name).replace(' ', '')
+                            middle_name = ''
         #     elements = first_name.split(' ')
         #     while True:
         #         pos = -1
@@ -229,8 +247,20 @@ class Name:
                        last_name]
                        ).strip())
 
-        #e.g., Michael Jr. Jordan
-        candidates.add(' '.join([last_name, middle_name, first_name]).strip())
+        #e.g., Jordan Jr. Michael 
+        limit = 1
+        if len(last_name) == 1:
+            limit -= 1
+        if len(middle_name) == 1:
+            limit -= 1
+        if len(first_name) == 1:
+            limit -= 1
+        if limit >= 0:
+            candidates.add(' '.join([last_name, middle_name, first_name]).strip())
+            candidates.add(' '.join([middle_name, last_name, first_name]).strip())
+            candidates.add(' '.join([last_name, first_name, middle_name]).strip())
+            candidates.add(' '.join([first_name, last_name, middle_name]).strip())
+            candidates.add(' '.join([middle_name, first_name, last_name]).strip())
         
         candidates_new = set()
         for candidate in candidates:
