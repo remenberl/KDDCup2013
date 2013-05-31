@@ -2,31 +2,24 @@
 import csv
 import os
 import cPickle
+import re
 from scipy.sparse import lil_matrix, dok_matrix, spdiags
 from difflib import SequenceMatcher
 from name import *
 from custom_setting import *
 
 
-def load_author_files():
+def load_name_statistic():
     directory = os.path.dirname(serialization_dir)
     if not os.path.exists(directory):
         os.makedirs(directory)
-    if os.path.isfile(serialization_dir + name_instance_file) and \
-        os.path.isfile(serialization_dir + id_name_file) and \
-            os.path.isfile(serialization_dir + name_statistics_file):
-        print "\tSerialization files related to authors exist."
+    if os.path.isfile(serialization_dir + name_statistics_file):
+        print "\tSerialization files related to name_statistics exist."
         print "\tReading in the serialization files."
-        name_instance_dict = cPickle.load(
-            open(serialization_dir + name_instance_file, "rb"))
-        id_name_dict = cPickle.load(
-            open(serialization_dir + id_name_file, "rb"))
         name_statistics = cPickle.load(
             open(serialization_dir + name_statistics_file, "rb"))
     else:
-        print "\tSerialization files related to authors do not exist."
-        name_instance_dict = dict()
-        id_name_dict = dict()
+        print "\tSerialization files related to name_statistics do not exist."
         name_statistics = dict()
         print "\tReading in the author.csv file."
         with open(author_file, 'rb') as csv_file:
@@ -36,11 +29,71 @@ def load_author_files():
             count = 0
             for row in author_reader:
                 count += 1
-                if count % 10000 == 0:
+                if count % 20000 == 0:
+                    print "\tFinish analysing " \
+                        + str(count) + " lines of the file."
+                author_name = row[1].lower().strip()
+                elements = author_name.split(' ')
+                for element in elements:
+                    if element != '':
+                        name_statistics[element] = name_statistics.setdefault(element, 0) + 1
+
+        print "\tWriting into serialization files related to name_statistics.\n"
+        cPickle.dump(
+            name_statistics,
+            open(serialization_dir + name_statistics_file, "wb"), 2)
+    return name_statistics
+  
+ 
+def load_author_files(name_statistics):
+    directory = os.path.dirname(serialization_dir)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    if os.path.isfile(serialization_dir + name_instance_file) and \
+            os.path.isfile(serialization_dir + id_name_file):
+        print "\tSerialization files related to authors exist."
+        print "\tReading in the serialization files."
+        name_instance_dict = cPickle.load(
+            open(serialization_dir + name_instance_file, "rb"))
+        id_name_dict = cPickle.load(
+            open(serialization_dir + id_name_file, "rb"))
+    else:
+        print "\tSerialization files related to authors do not exist."
+        name_instance_dict = dict()
+        id_name_dict = dict()
+        print "\tReading in the author.csv file."
+        with open(author_file, 'rb') as csv_file:
+            author_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
+            #skip first line
+            next(author_reader)
+            count = 0
+            for row in author_reader:
+                count += 1
+                if count % 20000 == 0:
                     print "\tFinish analysing " \
                         + str(count) + " lines of the file."
                 author_id = int(row[0])
-                author = Name(row[1])
+                author_name = row[1]
+
+                elements = author_name.split(" ")
+                if author_name.upper()[:-1] == author_name[:-1]:
+                    new_elements = elements
+                else:
+                    new_elements = list()
+                    for element in elements:
+                        if element.lower() in name_statistics:
+                            if len(element) < 3 and name_statistics[element.lower()] <= 1:
+                                new_elements.append(re.sub(r"(?<=\w)([A-Z])", r" \1", element))
+                            elif len(element) >= 3 and name_statistics[element.lower()] <= 1:
+                                if element.lower()[:-1] not in name_statistics or name_statistics[element.lower()[:-1]] <= 1:
+                                    new_elements.append(re.sub(r"(?<=\w)([A-Z])", r" \1", element))
+                                else:
+                                    new_elements.append(element)
+                            else:
+                                new_elements.append(element)
+                        else:
+                            new_elements.append(element)
+                author = Name(' '.join(new_elements))
                 id_name_dict[author_id] = [author.name, row[1]]
                 if author.name in name_instance_dict:
                     name_instance_dict[author.name].add_author_id(int(row[0]))
@@ -48,36 +101,22 @@ def load_author_files():
                     author.add_author_id(int(row[0]))
                     name_instance_dict[author.name] = author
 
-                if author.last_name not in name_statistics:
-                    name_statistics[author.last_name] = 0
-                else:
-                    name_statistics[author.last_name] += 1
-
-                if author.first_name not in name_statistics:
-                    name_statistics[author.first_name] = 0
-                else:
-                    name_statistics[author.first_name] += 1
-
-        print "\tWriting into serialization files related to authors."
+        print "\tWriting into serialization files related to authors.\n"
         cPickle.dump(
             name_instance_dict,
             open(serialization_dir + name_instance_file, "wb"), 2)
         cPickle.dump(
             id_name_dict,
             open(serialization_dir + id_name_file, "wb"), 2)
-        cPickle.dump(
-            name_statistics,
-            open(serialization_dir + name_statistics_file, "wb"), 2)
-
-    return (name_instance_dict, id_name_dict, name_statistics)
+ 
+    return (name_instance_dict, id_name_dict)
 
 
-def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
+def load_coauthor_files(name_instance_dict, id_name_dict):
     if os.path.isfile(serialization_dir + coauthor_matrix_file) and \
             os.path.isfile(serialization_dir + author_paper_matrix_file) and \
             os.path.isfile(serialization_dir + 'complete_' + name_instance_file) and \
-            os.path.isfile(serialization_dir + 'complete_' +id_name_file) and \
-            os.path.isfile(serialization_dir + 'complete_' + name_statistics_file) and\
+            os.path.isfile(serialization_dir + 'complete_' + id_name_file) and \
             os.path.isfile(serialization_dir + 'complete_' + author_paper_stat_file) :
         print "\tSerialization files related to coauthors exist."
         print "\tReading in the serialization files."
@@ -89,8 +128,6 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
             open(serialization_dir + 'complete_' + name_instance_file, "rb"))
         id_name_dict = cPickle.load(
             open(serialization_dir + 'complete_' + id_name_file, "rb"))
-        name_statistics = cPickle.load(
-            open(serialization_dir + 'complete_' + name_statistics_file, "rb"))
         author_paper_stat = cPickle.load(
             open(serialization_dir + 'complete_' + author_paper_stat_file, "rb"))
     else:
@@ -108,7 +145,7 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
             count = 0
             for row in paper_author_reader:
                 count += 1
-                if count % 100000 == 0:
+                if count % 500000 == 0:
                     print "\tFinish analysing " \
                         + str(count) + " lines of the file."
                 paper_id = int(row[0])
@@ -119,16 +156,6 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
                     author_paper_stat[author_id] = 1
                 full_author_paper_matrix[author_id, paper_id] = 1
                 author = Name(row[2], True)
-                if author.last_name not in name_statistics:
-                    name_statistics[author.last_name] = 0
-                else:
-                    name_statistics[author.last_name] += 1
-
-                if author.first_name not in name_statistics:
-                    name_statistics[author.first_name] = 0
-                else:
-                    name_statistics[author.first_name] += 1
-
                 if author_id in id_name_dict:
                     author_paper_matrix[author_id, paper_id] = 1
                     # add names appeared in paperauthor.csv
@@ -144,7 +171,7 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
         print "\tRemoving diagonal elements in coauthor_matrix."
         coauthor_matrix = coauthor_matrix - spdiags(coauthor_matrix.diagonal(), 0, max_author + 1, max_author + 1, 'csr')
 
-        print "\tWriting into serialization files related to coauthors."
+        print "\tWriting into serialization files related to coauthors.\n"
         cPickle.dump(
             coauthor_matrix,
             open(serialization_dir + coauthor_matrix_file, "wb"), 2)
@@ -158,13 +185,10 @@ def load_coauthor_files(name_instance_dict, id_name_dict, name_statistics):
             id_name_dict,
             open(serialization_dir + 'complete_' + id_name_file, "wb"), 2)
         cPickle.dump(
-            name_statistics,
-            open(serialization_dir + 'complete_' + name_statistics_file, "wb"), 2)
-        cPickle.dump(
             author_paper_stat,
             open(serialization_dir + 'complete_' + author_paper_stat_file, "wb"), 2)
     
-    return (author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, name_statistics, author_paper_stat)
+    return (author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, author_paper_stat)
 
 
 def load_covenue_files(id_name_dict, author_paper_matrix):
@@ -208,7 +232,7 @@ def load_covenue_files(id_name_dict, author_paper_matrix):
         print "\tRemoving diagonal elements in covenue_matrix."
         covenue_matrix = covenue_matrix - spdiags(covenue_matrix.diagonal(), 0, max_author + 1, max_author + 1, 'csr')
 
-        print "\tWriting into serialization files related to author_venue."
+        print "\tWriting into serialization files related to author_venue.\n"
         cPickle.dump(
             covenue_matrix,
             open(serialization_dir + covenue_matrix_file, "wb"), 2)
@@ -324,7 +348,7 @@ def load_author_word_files(id_name_dict, author_paper_matrix):
         print "\tRecomputing the author_word matrix."
         author_word_matrix = author_paper_matrix * paper_word_matrix
 
-        print "\tWriting into serialization files related to author_word."
+        print "\tWriting into serialization files related to author_word.\n"
         cPickle.dump(
             author_word_matrix,
             open(serialization_dir + author_word_matrix_file, "wb"), 2)
@@ -367,12 +391,10 @@ def load_files():
             A sparse matrix with row: author_id and column: author_id.
             It is obtained by joining author_venue_matrix with itself
     """
-    (name_instance_dict, id_name_dict, name_statistics) = load_author_files()
-    print
-    (author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, name_statistics, author_paper_stat) = load_coauthor_files(name_instance_dict, id_name_dict, name_statistics)
-    print
+    name_statistics = load_name_statistic()
+    (name_instance_dict, id_name_dict) = load_author_files(name_statistics)
+    (author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, author_paper_stat) = load_coauthor_files(name_instance_dict, id_name_dict)
     (covenue_matrix, author_venue_matrix) = load_covenue_files(id_name_dict, author_paper_matrix)
-    print
     author_word_matrix = load_author_word_files(id_name_dict, author_paper_matrix)
 
     return (name_instance_dict, id_name_dict, name_statistics,

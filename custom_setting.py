@@ -9,15 +9,10 @@ duplicate_authors_file = "./result/duplicate_authors.csv"
 duplicate_authors_full_name_file = "./result/duplicate_authors_fullname.csv"
 
 
-sequence_matcher_threshold = 0.8
-coauthor_weight = 100
-author_venue_weight = 10
-covenue_weight = 10
-paper_word_weight = 10
 merge_threshold = 0.000000001
 word_title_count_threshold = 100
 
-version = "v2_3"
+version = "v2_4"
 serialization_dir = "./serialize/"
 coauthor_matrix_file = "coauthor.seal" + '.' + version
 covenue_matrix_file = "covenue.seal" + '.' + version

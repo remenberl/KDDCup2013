@@ -262,6 +262,15 @@ class Name:
             candidates.add(' '.join([first_name, last_name, middle_name]).strip())
             candidates.add(' '.join([middle_name, first_name, last_name]).strip())
         
+        if len(self.initials) > 3:
+            candidates.add(' '.join([first_name, middle_name]).strip())
+            # candidates.add(' '.join([middle_name, last_name]).strip())
+            # elements = middle_name.split(' ')
+            # if len(elements) >= 2:
+            #     for i in xrange(len(elements) - 1):
+            #         tmp = ' '.join(elements[:i])
+            #         candidates.add(' '.join([first_name, tmp]).strip())
+
         candidates_new = set()
         for candidate in candidates:
             candidates_new.add(' '.join(candidate.split()))

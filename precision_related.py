@@ -188,7 +188,7 @@ def name_group_comparable(group, name_instance_dict, id_name_dict):
     for author_A in group:
         for author_B in group:
             if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]]):
-                print "\t\tConflicted name pair: " + id_name_dict[author_A][0] + '\tv.s.\t' + id_name_dict[author_B][0]
+                # print "\t\tConflicted name group: " + id_name_dict[author_A][0] + '\tv.s.\t' + id_name_dict[author_B][0]
                 return False
     return True
 
@@ -250,7 +250,7 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
     similarity_dict = {}
 
     for potential_duplicate_group in potential_duplicate_groups:  
-        if count % 5000 == 0:
+        if count % 30000 == 0:
             print "\tFinish analysing " \
                 + str(float(count)/len(potential_duplicate_groups)*100) \
                 + "% (" + str(count) + "/" + str(len(potential_duplicate_groups)) \

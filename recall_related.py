@@ -37,13 +37,8 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                 # of the current name.
                 for id in name_instance_dict[alternative].author_ids:
                     name_instance_dict[author_name].add_similar_author_id(id)
-    # for (author_name, name_instance) in name_instance_dict.iteritems():
-    #     if author_name in virtual_name_set:
-    #         for id in name_instance.similar_author_ids:
-    #             for id in name_instance.similar_author_ids:
-    #                 name_instance_dict[id_name_dictp[id][0]].add_similar_author_id(id)
-
-
+    
+  
     length = len(name_instance_dict) - len(virtual_name_set)
     init_full_dict = {}
     full_init_dict = {}
@@ -79,9 +74,11 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                     for id in name_instance_candidate.author_ids:
                         name_instance.add_similar_author_id(id)
             count += 1
-            if count % 10000 == 0:
+            if count % 30000 == 0:
                 print "\t\tFinish matching " + str(float(count)/length*100)\
                     + "% (" + str(count) + "/" + str(length) + ") names with the whole database."
+    print
+
     count = 0
     for (author_id, author_name_list) in id_name_dict.iteritems():
         if not all(ord(char) < 128 for char in author_name_list[1]) or author_name_list[1].find('?') >= 0:
@@ -95,12 +92,12 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                     for id in name_instance_candidate.author_ids:
                         name_instance_dict[author_name_list[0]].add_similar_author_id(id)                    
             count += 1
-            if count % 100 == 0:
+            if count % 1000 == 0:
                 print "\t\tFinish matching " + str(count)\
                     + " names containing question mark or non askii characters with the whole database."
 
     print "\t\tIn total there exist " + str(count)\
-        + " names containing question marks or non askii characters."
+        + " names containing question marks or non askii characters.\n"
 
     count = 0
     for (author_name, name_instance) in name_instance_dict.iteritems():
@@ -114,7 +111,7 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                     for id in name_instance.author_ids:
                         name_instance_dict[new_name].add_similar_author_id(id)
                     count += 1
-                    if count % 100 == 0:
+                    if count % 2000 == 0:
                         print "\t\tFinish matching " + str(count)\
                             + " pairs of nicknames."
 
