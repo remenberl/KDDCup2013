@@ -9,13 +9,7 @@ import cPickle
 
 def run_from_step(step):
     print "Step 1/6: Load files"
-    (name_instance_dict, id_name_dict, name_statistics,
-        coauthor_matrix,
-        covenue_matrix,
-        author_word_matrix,
-        author_venue_matrix,
-        author_paper_matrix,
-        author_paper_stat) = load_files()
+    (name_instance_dict, id_name_dict, name_statistics, author_paper_stat, metapaths) = load_files()
 
     print "\nStep 2/6: Find similar ids to increase recall"
     if step <= 2:
@@ -49,7 +43,7 @@ def run_from_step(step):
     print "\nStep 4/6: Find and merge local clusters"
     if step <= 4:
         (real_duplicate_groups, similarity_score_dict) = local_clustering(potential_duplicate_groups, author_paper_stat, \
-            name_instance_dict, id_name_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
+            name_instance_dict, id_name_dict, metapaths)
         print "\tSaving files generated in this step for debug."
         cPickle.dump(
                 real_duplicate_groups,
@@ -68,12 +62,12 @@ def run_from_step(step):
     iter_num = 3
     while iter_num > 0:
         find_closure(authors_duplicates_dict)
-        refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
+        refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, metapaths)
         iter_num -= 1
-
+    final_filter(authors_duplicates_dict, name_instance_dict, id_name_dict)
     print "\nStep 6/6: Generate submission files"
     save_result(authors_duplicates_dict, name_instance_dict, id_name_dict)
        
 
 if __name__ == '__main__':
-    run_from_step(2)
+    run_from_step(5)

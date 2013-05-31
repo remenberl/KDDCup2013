@@ -9,16 +9,17 @@ duplicate_authors_file = "./result/duplicate_authors.csv"
 duplicate_authors_full_name_file = "./result/duplicate_authors_fullname.csv"
 
 
-merge_threshold = 0.000000001
-word_title_count_threshold = 100
+merge_threshold = 0.00000000001
+word_title_count_threshold = 1000000
 
-version = "v2_4"
+version = "v2_5"
 serialization_dir = "./serialize/"
 coauthor_matrix_file = "coauthor.seal" + '.' + version
 covenue_matrix_file = "covenue.seal" + '.' + version
 author_word_matrix_file = "author_word.seal" + '.' + version
 author_venue_matrix_file = "author_venue.seal" + '.' + version
 author_paper_matrix_file = "author_paper.seal" + '.' + version
+author_key_word_matrix_file = "author_key_word.seal" + '.' + version
 name_instance_file = "name_instance.seal" + '.' + version
 id_name_file = "id_name.seal" + '.' + version
 name_statistics_file = "name_statistics.seal" + '.' + version

@@ -9,13 +9,30 @@ from name import *
 from custom_setting import *
 
 
+class Metapaths(object):
+    """docstring for ClassName"""
+    def __init__(self, AP, AV, AW, AK, APA, AVA):
+        #AP: author-paper
+        #AV: author-venue
+        #APA: author-paper-venue
+        #AVA: author-venue-author
+        #AW: author-word
+        #AK: author-keyword
+        self.AP = AP
+        self.AV = AV
+        self.AW = AW
+        self.AK = AK
+        self.APA = APA
+        self.AVA = AVA
+         
+
 def load_name_statistic():
     directory = os.path.dirname(serialization_dir)
     if not os.path.exists(directory):
         os.makedirs(directory)
     if os.path.isfile(serialization_dir + name_statistics_file):
         print "\tSerialization files related to name_statistics exist."
-        print "\tReading in the serialization files."
+        print "\tReading in the serialization files.\n"
         name_statistics = cPickle.load(
             open(serialization_dir + name_statistics_file, "rb"))
     else:
@@ -52,7 +69,7 @@ def load_author_files(name_statistics):
     if os.path.isfile(serialization_dir + name_instance_file) and \
             os.path.isfile(serialization_dir + id_name_file):
         print "\tSerialization files related to authors exist."
-        print "\tReading in the serialization files."
+        print "\tReading in the serialization files.\n"
         name_instance_dict = cPickle.load(
             open(serialization_dir + name_instance_file, "rb"))
         id_name_dict = cPickle.load(
@@ -115,15 +132,18 @@ def load_author_files(name_statistics):
 def load_coauthor_files(name_instance_dict, id_name_dict):
     if os.path.isfile(serialization_dir + coauthor_matrix_file) and \
             os.path.isfile(serialization_dir + author_paper_matrix_file) and \
+            os.path.isfile(serialization_dir + 'all_' + author_paper_matrix_file) and \
             os.path.isfile(serialization_dir + 'complete_' + name_instance_file) and \
             os.path.isfile(serialization_dir + 'complete_' + id_name_file) and \
             os.path.isfile(serialization_dir + 'complete_' + author_paper_stat_file) :
         print "\tSerialization files related to coauthors exist."
-        print "\tReading in the serialization files."
+        print "\tReading in the serialization files.\n"
         coauthor_matrix = cPickle.load(
             open(serialization_dir + coauthor_matrix_file, "rb"))
         author_paper_matrix = cPickle.load(
             open(serialization_dir + author_paper_matrix_file, "rb"))
+        all_author_paper_matrix = cPickle.load(
+            open(serialization_dir + 'all_' + author_paper_matrix_file, "rb"))
         name_instance_dict = cPickle.load(
             open(serialization_dir + 'complete_' + name_instance_file, "rb"))
         id_name_dict = cPickle.load(
@@ -133,7 +153,7 @@ def load_coauthor_files(name_instance_dict, id_name_dict):
     else:
         print "\tSerialization files related to coauthors do not exist."
         # The maximum id for author is 2293837 and for paper is 2259021
-        full_author_paper_matrix = lil_matrix((max_author + 1, max_paper + 1))
+        all_author_paper_matrix = lil_matrix((max_author + 1, max_paper + 1))
         author_paper_matrix = lil_matrix((max_author + 1, max_paper + 1))
         author_paper_stat = dict()
         print "\tReading in the paperauthor.csv file."
@@ -154,7 +174,7 @@ def load_coauthor_files(name_instance_dict, id_name_dict):
                     author_paper_stat[author_id] += 1
                 else:
                     author_paper_stat[author_id] = 1
-                full_author_paper_matrix[author_id, paper_id] = 1
+                all_author_paper_matrix[author_id, paper_id] = 1
                 author = Name(row[2], True)
                 if author_id in id_name_dict:
                     author_paper_matrix[author_id, paper_id] = 1
@@ -166,7 +186,7 @@ def load_coauthor_files(name_instance_dict, id_name_dict):
                         name_instance_dict[id_name_dict[author_id][0]].add_alternative(author.name)
                         id_name_dict[author_id].append(author.name)
         print "\tComputing the coauthor graph."
-        coauthor_matrix = author_paper_matrix * full_author_paper_matrix.transpose()
+        coauthor_matrix = author_paper_matrix * all_author_paper_matrix.transpose()
 
         print "\tRemoving diagonal elements in coauthor_matrix."
         coauthor_matrix = coauthor_matrix - spdiags(coauthor_matrix.diagonal(), 0, max_author + 1, max_author + 1, 'csr')
@@ -179,6 +199,9 @@ def load_coauthor_files(name_instance_dict, id_name_dict):
             author_paper_matrix,
             open(serialization_dir + author_paper_matrix_file, "wb"), 2)
         cPickle.dump(
+            author_paper_matrix,
+            open(serialization_dir + "all_" + author_paper_matrix_file, "wb"), 2)
+        cPickle.dump(
             name_instance_dict,
             open(serialization_dir + 'complete_' + name_instance_file, "wb"), 2)
         cPickle.dump(
@@ -188,21 +211,24 @@ def load_coauthor_files(name_instance_dict, id_name_dict):
             author_paper_stat,
             open(serialization_dir + 'complete_' + author_paper_stat_file, "wb"), 2)
     
-    return (author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, author_paper_stat)
+    return (author_paper_matrix, all_author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, author_paper_stat)
 
 
-def load_covenue_files(id_name_dict, author_paper_matrix):
-    if os.path.isfile(serialization_dir + covenue_matrix_file):
+def load_covenue_files(id_name_dict, author_paper_matrix, all_author_paper_matrix):
+    if os.path.isfile(serialization_dir + author_venue_matrix_file) and \
+            os.path.isfile(serialization_dir + 'all_' + author_venue_matrix_file):
         print "\tSerialization files related to author_venue exist."
         print "\tReading in the serialization files."
-        covenue_matrix = cPickle.load(open(
-            serialization_dir + covenue_matrix_file, "rb"))
+        # covenue_matrix = cPickle.load(open(
+        #     serialization_dir + covenue_matrix_file, "rb"))
         author_venue_matrix = cPickle.load(open(
             serialization_dir + author_venue_matrix_file, "rb"))
+        all_author_venue_matrix = cPickle.load(open(
+            serialization_dir + 'all_' + author_venue_matrix_file, "rb"))
     else:
         print "\tSerialization files related to author_venue do not exist."
         # The maximum id for journal is 5222 and for conference is 22228
-        # full_author_venue_matrix = lil_matrix((max_author + 1, max_conference + max_journal + 1))
+        all_author_venue_matrix = lil_matrix((max_author + 1, max_conference + max_journal + 1))
         paper_venue_matrix = lil_matrix((max_paper + 1, max_conference + max_journal + 1))
         print "\tReading in the sanitizedPaper.csv file."
         with open(paper_file, 'rb') as csv_file:
@@ -221,31 +247,29 @@ def load_covenue_files(id_name_dict, author_paper_matrix):
 
         print "\tComputing the author_venue matrix."
         author_venue_matrix = author_paper_matrix * paper_venue_matrix
-        # full_author_venue_matrix = full_author_paper_matrix * paper_venue_matrix
-        # print len(row), len(col)
-
-        print "\tComputing the covenue matrix."
-        covenue_matrix = author_venue_matrix * author_venue_matrix.transpose()
-       
-        # del author_venue_matrix, full_author_venue_matrix
-
-        print "\tRemoving diagonal elements in covenue_matrix."
-        covenue_matrix = covenue_matrix - spdiags(covenue_matrix.diagonal(), 0, max_author + 1, max_author + 1, 'csr')
+        all_author_venue_matrix = all_author_paper_matrix * paper_venue_matrix
+        # del author_venue_matrix, all_author_venue_matrix
 
         print "\tWriting into serialization files related to author_venue.\n"
         cPickle.dump(
-            covenue_matrix,
-            open(serialization_dir + covenue_matrix_file, "wb"), 2)
-        cPickle.dump(
             author_venue_matrix,
             open(serialization_dir + author_venue_matrix_file, "wb"), 2)
+        cPickle.dump(
+            all_author_venue_matrix,
+            open(serialization_dir + 'all_' + author_venue_matrix_file, "wb"), 2)
+
+    print "\tComputing the covenue matrix."
+    covenue_matrix = author_venue_matrix * all_author_venue_matrix.transpose()
+    print "\tRemoving diagonal elements in covenue_matrix.\n"
+    covenue_matrix = covenue_matrix - spdiags(covenue_matrix.diagonal(), 0, max_author + 1, max_author + 1, 'csr')
+
     return (covenue_matrix, author_venue_matrix)
 
 
 def load_author_word_files(id_name_dict, author_paper_matrix):
     if os.path.isfile(serialization_dir + author_word_matrix_file):
         print "\tSerialization files related to author_word exist."
-        print "\tReading in the serialization files."
+        print "\tReading in the serialization files.\n"
         author_word_matrix = cPickle.load(open(
             serialization_dir + author_word_matrix_file, "rb"))
     else:
@@ -280,7 +304,7 @@ def load_author_word_files(id_name_dict, author_paper_matrix):
         stopwords = set()
         max_word = 0
         for (word, count) in word_statistic_dict.iteritems():
-            if count <= 1 or count > 1000:
+            if count <= 1 or count > 500000:
                 stopwords.add(word)
             else:
                 max_word += 1
@@ -355,6 +379,83 @@ def load_author_word_files(id_name_dict, author_paper_matrix):
     return author_word_matrix
 
 
+def load_author_keyword_files(author_paper_matrix):
+    if os.path.isfile(serialization_dir + author_key_word_matrix_file):
+        print "\tSerialization files related to author_keyword exist."
+        print "\tReading in the serialization files."
+        author_key_word_matrix = cPickle.load(open(
+            serialization_dir + author_key_word_matrix_file, "rb"))
+    else:
+        print "\tSerialization files related to author_keyword do not exist."
+        nAuthor = author_paper_matrix.shape[0]-1
+        nPaper = author_paper_matrix.shape[1]-1
+        count = 0 #to count the # of unique key words
+        dict_paper_keyWord = dict() #key: paperID. value: list of key words
+        dict_keyWord = dict() #maps a keyWord to the corresponding column in paper_keyword_matrix
+
+        print "\tReading in the Paper.csv file."
+        with open("./data/Paper.csv", 'rb') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            next(csv_reader)
+            count = 0 
+            for row in csv_reader:
+                paper_id = int(row[0])
+                keyWords = row[5]
+                #a valid key word list of a paper can't have more than 20 words
+                if len(keyWords) > 0 and len(keyWords) < 50: 
+                    keyWords = keyWords.lower()
+                    keyWords = keyWords.split(' ') #parse each keyword by ' '
+                    nW = len(keyWords)
+                    if nW > 0:
+                        for i in range(0,nW):
+                            tmpWord = keyWords[i] 
+                            tmpWord = tmpWord.replace(',','').replace(' ','').replace(':','').\
+                                        replace('.','').replace(';','').replace('-','').replace('|','') 
+                            #if re.match("^[a-zA-Z0-9]+$", tmpWord): #valid keyword should only contai 0-9 or a-zA-Z
+                            if re.match("^[a-zA-Z]+$", tmpWord): #valid keyword should only contain a-zA-Z
+                                #valid keyword should have [4,15] characters, and can't be the word "keyword" or "key" or "word"
+                                condi = len(tmpWord) <= 15 and len(tmpWord) >=4 and 'key' not in tmpWord and 'word' not in tmpWord 
+                                if condi: #if all conditions met for tmpWord to be a valid key word
+                                    if tmpWord not in dict_keyWord:
+                                        dict_keyWord[tmpWord] = count #
+                                        count += 1 #whenever there is a unique new word, count++
+                                    if paper_id not in dict_paper_keyWord:
+                                        dict_paper_keyWord[paper_id] = [tmpWord]
+                                    else:
+                                        dict_paper_keyWord[paper_id].append(tmpWord)         
+                                        
+        nUniqueKeyWord = count 
+        print "\tSummary:", nUniqueKeyWord, "unique keywords identified, contained in", \
+                len(dict_paper_keyWord), "papers"
+                 
+        #computing paper_keyword_matrix
+        print "\tComputing the co-key-word graph."
+        paper_keyword_matrix = lil_matrix((nPaper+1, nUniqueKeyWord ))
+        for paper_id in dict_paper_keyWord.keys():
+            key_words = dict_paper_keyWord[paper_id]
+            for word in key_words: 
+                paper_keyword_matrix[paper_id, dict_keyWord[word]] += 1
+        
+        author_key_word_matrix = author_paper_matrix * paper_keyword_matrix 
+        
+        # print "\tComputing the co-key-word graph."
+        # co_keyword_matrix = author_key_word_matrix * author_key_word_matrix.transpose()
+        # co_keyword_matrix = co_keyword_matrix - spdiags(co_keyword_matrix.diagonal(), 0, nAuthor+1, nAuthor+1, 'csr')
+
+        #store unique key-words into txt file for manual check
+        with open("./data/list_paper_key_words.txt", 'wb') as keyWord_file:
+            keyWord_file.write('Unique Key Words: n = ' + str(len(dict_keyWord)) + '\n')
+            for key_id in dict_keyWord.keys():
+                keyWord_file.write( key_id + ', ' ) 
+                
+        print "\tWriting into serialization files related to author_keyword."
+        cPickle.dump(
+            author_key_word_matrix,
+            open(serialization_dir + author_key_word_matrix_file, "wb"), 2)
+      
+    return author_key_word_matrix
+
+
 def load_files():
     """Read in files from the folder "data" if no serialization files exist in
        folder serialization_dir.
@@ -393,16 +494,13 @@ def load_files():
     """
     name_statistics = load_name_statistic()
     (name_instance_dict, id_name_dict) = load_author_files(name_statistics)
-    (author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, author_paper_stat) = load_coauthor_files(name_instance_dict, id_name_dict)
-    (covenue_matrix, author_venue_matrix) = load_covenue_files(id_name_dict, author_paper_matrix)
+    (author_paper_matrix, all_author_paper_matrix, coauthor_matrix, name_instance_dict, id_name_dict, author_paper_stat) = load_coauthor_files(name_instance_dict, id_name_dict)
+    (covenue_matrix, author_venue_matrix) = load_covenue_files(id_name_dict, author_paper_matrix, all_author_paper_matrix)
     author_word_matrix = load_author_word_files(id_name_dict, author_paper_matrix)
+    author_key_word_matrix = load_author_keyword_files(author_paper_matrix)
 
-    return (name_instance_dict, id_name_dict, name_statistics,
-            coauthor_matrix,
-            covenue_matrix,
-            author_word_matrix, 
-            author_venue_matrix,
-            author_paper_matrix, author_paper_stat)
+    metapaths = Metapaths(author_paper_matrix, author_venue_matrix, author_word_matrix, author_key_word_matrix, coauthor_matrix, covenue_matrix)
+    return (name_instance_dict, id_name_dict, name_statistics, author_paper_stat, metapaths)
 
 
 def save_result(authors_duplicates_dict, name_instance_dict, id_name_dict):

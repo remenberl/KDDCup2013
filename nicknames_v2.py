@@ -31,6 +31,7 @@ nicknames = (
     ('Henry', 'Hank'),
     ('Herbert', 'Herb'),
     ('Howard', 'Howie'),
+    ('Hossein', 'Hosein'),
     ('James', 'Jim', 'Jimmy'),
     ('Jerome', 'Jerry'),
     ('John', 'Jon', 'Johnny', 'Jack'),

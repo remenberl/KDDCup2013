@@ -193,43 +193,50 @@ def name_group_comparable(group, name_instance_dict, id_name_dict):
     return True
 
 
-def compute_similarity_score(author_A, author_B, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix):
+def compute_similarity_score(author_A, author_B, metapaths):
     if author_A not in normalized_feature_dict:
-        feature_A = (author_paper_matrix.getrow(author_A), coauthor_matrix.getrow(author_A), author_venue_matrix.getrow(author_A), covenue_matrix.getrow(author_A), author_word_matrix.getrow(author_A))
+        feature_A = (metapaths.AP.getrow(author_A), metapaths.APA.getrow(author_A), \
+            metapaths.AV.getrow(author_A), metapaths.AVA.getrow(author_A), \
+            metapaths.AW.getrow(author_A), metapaths.AK.getrow(author_A))
         normalized_feature_A = (
             normalize(feature_A[0], norm='l2', axis=1),
             normalize(feature_A[1], norm='l2', axis=1),
             normalize(feature_A[2], norm='l2', axis=1),
             normalize(feature_A[3], norm='l2', axis=1),
-            normalize(feature_A[4], norm='l2', axis=1))
+            normalize(feature_A[4], norm='l2', axis=1),
+            normalize(feature_A[5], norm='l2', axis=1))
         normalized_feature_dict[author_A] = normalized_feature_A
     else:
         normalized_feature_A = normalized_feature_dict[author_A]
 
     if author_B not in normalized_feature_dict:
-        feature_B = (author_paper_matrix.getrow(author_B), coauthor_matrix.getrow(author_B), author_venue_matrix.getrow(author_B), covenue_matrix.getrow(author_B), author_word_matrix.getrow(author_B))
+        feature_B = (metapaths.AP.getrow(author_B), metapaths.APA.getrow(author_B), \
+            metapaths.AV.getrow(author_B), metapaths.AVA.getrow(author_B), \
+            metapaths.AW.getrow(author_B), metapaths.AK.getrow(author_B))
         normalized_feature_B = (
             normalize(feature_B[0], norm='l2', axis=1),
             normalize(feature_B[1], norm='l2', axis=1),
             normalize(feature_B[2], norm='l2', axis=1),
             normalize(feature_B[3], norm='l2', axis=1),
-            normalize(feature_B[4], norm='l2', axis=1))
+            normalize(feature_B[4], norm='l2', axis=1),
+            normalize(feature_B[5], norm='l2', axis=1))
         normalized_feature_dict[author_B] = normalized_feature_B
     else:
         normalized_feature_B = normalized_feature_dict[author_B]
 
-    similarity = (1000000 * normalized_feature_A[0].multiply(normalized_feature_B[0]).sum(),
-             10000 * normalized_feature_A[1].multiply(normalized_feature_B[1]).sum(),
-             1000000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(),
-             10000 * normalized_feature_A[3].multiply(normalized_feature_B[3]).sum(),
-             normalized_feature_A[3].multiply(normalized_feature_B[1]).sum(),
-             normalized_feature_A[1].multiply(normalized_feature_B[3]).sum(),
-             10000 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum(), 0.00001)
+    similarity = (1000000 * normalized_feature_A[0].multiply(normalized_feature_B[0]).sum(), #same paper
+             100000 * normalized_feature_A[1].multiply(normalized_feature_B[1]).sum(), #coauthor
+             100000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(), #same venue
+             1000 * normalized_feature_A[3].multiply(normalized_feature_B[3]).sum(), #covenue
+             10 * normalized_feature_A[3].multiply(normalized_feature_B[1]).sum(),
+             10 * normalized_feature_A[1].multiply(normalized_feature_B[3]).sum(),
+             100 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum(),
+             100000 * normalized_feature_A[5].multiply(normalized_feature_B[5]).sum(), merge_threshold)
 
     return similarity
 
 
-def local_clustering(potential_duplicate_groups, author_paper_stat, name_instance_dict, id_name_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix):
+def local_clustering(potential_duplicate_groups, author_paper_stat, name_instance_dict, id_name_dict, metapaths):
     """Detect duplicate groups based on coauthor relationship between authors.
 
     Parameters:
@@ -243,14 +250,14 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
         A set containing lots of tuples describing the real duplicate group.
     """
     count = 0
-    statistic = [0] * 8
+    statistic = [0] * 9
     real_duplicate_groups = set()
 
     normalized_feature_dict = {}
     similarity_dict = {}
 
     for potential_duplicate_group in potential_duplicate_groups:  
-        if count % 30000 == 0:
+        if count % 20000 == 0:
             print "\tFinish analysing " \
                 + str(float(count)/len(potential_duplicate_groups)*100) \
                 + "% (" + str(count) + "/" + str(len(potential_duplicate_groups)) \
@@ -267,8 +274,8 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
         if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]]):
             continue
 
-        similarity = compute_similarity_score(author_A, author_B, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix)
-        if max(similarity) > merge_threshold:
+        similarity = compute_similarity_score(author_A, author_B, metapaths)
+        if max(similarity) >= merge_threshold:
             real_duplicate_groups.add(potential_duplicate_group)
             statistic[similarity.index(max(similarity))] += 1
 
@@ -354,7 +361,7 @@ def find_closure(authors_duplicates_dict):
         authors_duplicates_dict[author_id].remove(author_id)
 
 
-def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_dict, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix):
+def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_dict, metapaths):
     for author_id in authors_duplicates_dict.iterkeys():
         if author_id in authors_duplicates_dict[author_id]:
             authors_duplicates_dict[author_id].remove(author_id)
@@ -376,7 +383,7 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, sim
         pool = authors_duplicates_dict[author_id]
         for candi in pool:
             if tuple(sorted((author_id, candi))) not in similarity_dict:
-                similarity_dict[tuple(sorted((author_id, candi)))] = max(compute_similarity_score(author_id, candi, author_paper_matrix, coauthor_matrix, author_venue_matrix, covenue_matrix, author_word_matrix))
+                similarity_dict[tuple(sorted((author_id, candi)))] = max(compute_similarity_score(author_id, candi, metapaths))
         max_similarity_dict[author_id] = max([similarity_dict[tuple(sorted((author_id, candi)))] for candi in authors_duplicates_dict[author_id]])
 
     conflict_ids = sorted(conflict_ids, key=lambda candi: -max_similarity_dict[candi])
@@ -404,3 +411,32 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, sim
         if author_id in authors_duplicates_dict[author_id]:
             authors_duplicates_dict[author_id].remove(author_id)
 
+
+def final_filter(authors_duplicates_dict, name_instance_dict, id_name_dict):
+    count = 0
+    for author_id in authors_duplicates_dict.iterkeys():
+        if len(authors_duplicates_dict[author_id]) == 1:
+            name_instance_A = name_instance_dict[id_name_dict[author_id][0]]
+            name_A = id_name_dict[author_id][0]
+            elements_A = name_A.split(' ')
+            #remove  A Dgh EF and Abc EF pairs
+            to_remove_set = set()
+            for id in authors_duplicates_dict[author_id]:
+                name_instance_B = name_instance_dict[id_name_dict[id][0]]
+                name_B = id_name_dict[id][0]
+                elements_B = name_B.split(' ')
+                if len(elements_A) > 2 and len(elements_A[0]) == 1 and len(elements_A[1]) > 1:
+                    if len(elements_B[0]) > 1 and len(elements_B) == 2 and elements_A[0][0] == elements_B[0][0] and elements_A[1][0] != elements_B[0][0]:
+                        to_remove_set.add(id)
+                        count += 1
+                        print '\t\tRemoving ' + name_B + ' from duplicates_set of ' + name_A
+                elif len(elements_B) > 2 and len(elements_B[0]) == 1 and len(elements_B[1]) > 1:
+                    if len(elements_A[0]) > 1 and len(elements_A) == 2 and elements_B[0][0] == elements_A[0][0] and elements_B[1][0] != elements_A[0][0]:
+                        to_remove_set.add(id)
+                        count += 1
+                        print '\t\tRemoving ' + name_B + ' from duplicates_set of ' + name_A
+
+            for id in to_remove_set:
+                authors_duplicates_dict[author_id].remove(id)
+    print "\tFinish removing " + str(float(count)) \
+                + " unconfident names."
