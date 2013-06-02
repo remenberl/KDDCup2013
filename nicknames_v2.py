@@ -71,6 +71,7 @@ nicknames = (
     ('Vernon', 'Vern'),
     ('William', 'Bill', 'Billy', 'Will', 'Willy'),
     ('Willis', 'Will'),
+    ('Yossef', 'Yossi'),
     ('Aaron', 'Ron', 'Ronnie', 'Ronny'),
     ('Abel', 'Abe', 'Abie'),
     ('Abigail', 'Abbie', 'Abby', 'Gail', 'Nabby'),

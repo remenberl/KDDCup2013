@@ -19,7 +19,7 @@ def my_string_match_score(s1, s2):
     count = 0
     for element1 in elements_s1:
         for element2 in elements_s2:
-            if (element1, element2) in nickname_set:
+            if (element1, element2) in nickname_set or (element1, element2) in nickname_initials_set:
                 count += 1
                 continue
             if element1[0] != element2[0]:
@@ -88,7 +88,7 @@ def single_name_comparable(name_instance_A, name_instance_B):
 
     # if is_substr(name_A.replace(' ', ''), name_B.replace(' ', '')) and len(name_A) > 10 and len(name_B) > 10:
     #     return True
-    if (name_instance_A.first_name, name_instance_B.first_name) not in nickname_set:
+    if (name_instance_A.first_name, name_instance_B.first_name) not in nickname_set and (name_instance_A.first_name, name_instance_B.first_name) not in nickname_initials_set:
         if not is_substr(name_instance_A.initials, name_instance_B.initials):
             return False
     else:
@@ -121,7 +121,7 @@ def single_name_comparable(name_instance_A, name_instance_B):
     #             if SequenceMatcher(None, name_instance_A.last_name[1:], name_instance_B.last_name[1:]).ratio() < 0.5:
     #                 return False
 
-    if name_instance_A.first_name[0] != name_instance_B.first_name[0]:
+    if name_instance_A.first_name[0] != name_instance_B.first_name[0] and (name_instance_A.first_name, name_instance_B.first_name) not in nickname_initials_set:
         if len(name_instance_B.middle_name) > 0:
             if name_instance_A.first_name[0] == name_instance_B.middle_name[0]:
                 if len(name_instance_A.first_name) > 1 and len(name_instance_B.middle_name) > 1:
@@ -196,45 +196,74 @@ def name_group_comparable(group, name_instance_dict, id_name_dict):
 def compute_similarity_score(author_A, author_B, metapaths):
     if author_A not in normalized_feature_dict:
         feature_A = (metapaths.AP.getrow(author_A), metapaths.APA.getrow(author_A), \
-            metapaths.AV.getrow(author_A), metapaths.AVA.getrow(author_A), \
-            metapaths.AW.getrow(author_A), metapaths.AK.getrow(author_A))
+            metapaths.APV.getrow(author_A), metapaths.APVPA.getrow(author_A), \
+            metapaths.APW.getrow(author_A), metapaths.APK.getrow(author_A), \
+            metapaths.AO.getrow(author_A), metapaths.APAPA.getrow(author_A), \
+            metapaths.APKPA.getrow(author_A), metapaths.APAPV.getrow(author_A), \
+            metapaths.AY.getrow(author_A))
         normalized_feature_A = (
             normalize(feature_A[0], norm='l2', axis=1),
             normalize(feature_A[1], norm='l2', axis=1),
             normalize(feature_A[2], norm='l2', axis=1),
             normalize(feature_A[3], norm='l2', axis=1),
             normalize(feature_A[4], norm='l2', axis=1),
-            normalize(feature_A[5], norm='l2', axis=1))
+            normalize(feature_A[5], norm='l2', axis=1),
+            normalize(feature_A[6], norm='l2', axis=1),
+            normalize(feature_A[7], norm='l2', axis=1),
+            normalize(feature_A[8], norm='l2', axis=1),
+            normalize(feature_A[9], norm='l2', axis=1),
+            normalize(feature_A[10], norm='l2', axis=1))
         normalized_feature_dict[author_A] = normalized_feature_A
     else:
         normalized_feature_A = normalized_feature_dict[author_A]
 
     if author_B not in normalized_feature_dict:
         feature_B = (metapaths.AP.getrow(author_B), metapaths.APA.getrow(author_B), \
-            metapaths.AV.getrow(author_B), metapaths.AVA.getrow(author_B), \
-            metapaths.AW.getrow(author_B), metapaths.AK.getrow(author_B))
+            metapaths.APV.getrow(author_B), metapaths.APVPA.getrow(author_B), \
+            metapaths.APW.getrow(author_B), metapaths.APK.getrow(author_B), \
+            metapaths.AO.getrow(author_B), metapaths.APAPA.getrow(author_B), \
+            metapaths.APKPA.getrow(author_B), metapaths.APAPV.getrow(author_B), \
+            metapaths.AY.getrow(author_B))
         normalized_feature_B = (
             normalize(feature_B[0], norm='l2', axis=1),
             normalize(feature_B[1], norm='l2', axis=1),
             normalize(feature_B[2], norm='l2', axis=1),
             normalize(feature_B[3], norm='l2', axis=1),
             normalize(feature_B[4], norm='l2', axis=1),
-            normalize(feature_B[5], norm='l2', axis=1))
+            normalize(feature_B[5], norm='l2', axis=1),
+            normalize(feature_B[6], norm='l2', axis=1),
+            normalize(feature_B[7], norm='l2', axis=1),
+            normalize(feature_B[8], norm='l2', axis=1),
+            normalize(feature_B[9], norm='l2', axis=1),
+            normalize(feature_B[10], norm='l2', axis=1))
         normalized_feature_dict[author_B] = normalized_feature_B
     else:
         normalized_feature_B = normalized_feature_dict[author_B]
 
     similarity = (1000000 * normalized_feature_A[0].multiply(normalized_feature_B[0]).sum(), #same paper
-             100000 * normalized_feature_A[1].multiply(normalized_feature_B[1]).sum(), #coauthor
-             100000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(), #same venue
-             1000 * normalized_feature_A[3].multiply(normalized_feature_B[3]).sum(), #covenue
-             10 * normalized_feature_A[3].multiply(normalized_feature_B[1]).sum(),
-             10 * normalized_feature_A[1].multiply(normalized_feature_B[3]).sum(),
+             100000 * normalized_feature_A[1].multiply(normalized_feature_B[1]).sum(), #APA
+             100000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(), #AV
+             1000 * normalized_feature_A[3].multiply(normalized_feature_B[3]).sum(), #AVA
+             1000 * normalized_feature_A[3].multiply(normalized_feature_B[7]).sum(),
+             1000 * normalized_feature_A[7].multiply(normalized_feature_B[3]).sum(),
              100 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum(),
-             100000 * normalized_feature_A[5].multiply(normalized_feature_B[5]).sum(), merge_threshold)
+             100000 * normalized_feature_A[5].multiply(normalized_feature_B[5]).sum(), 
+             1000000 * normalized_feature_A[6].multiply(normalized_feature_B[6]).sum(),
+             1000 * normalized_feature_A[7].multiply(normalized_feature_B[7]).sum(), #APAPA
+             1000 * normalized_feature_A[8].multiply(normalized_feature_B[8]).sum(), #AKA
+             1000 * normalized_feature_A[9].multiply(normalized_feature_B[9]).sum(), #APAPV
+             1 * normalized_feature_A[10].multiply(normalized_feature_B[10]).sum(), merge_threshold)
 
     return similarity
 
+def is_simple_name(name):
+    elements = name.split(' ')
+    for element in elements[:-1]:
+        if len(element) != 1:
+            break
+    else:
+        return True
+    return False
 
 def local_clustering(potential_duplicate_groups, author_paper_stat, name_instance_dict, id_name_dict, metapaths):
     """Detect duplicate groups based on coauthor relationship between authors.
@@ -250,25 +279,30 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
         A set containing lots of tuples describing the real duplicate group.
     """
     count = 0
-    statistic = [0] * 9
+    statistic = [0] * 14
     real_duplicate_groups = set()
 
     normalized_feature_dict = {}
     similarity_dict = {}
-
+    no_paper_statistic = [0] * 2
     for potential_duplicate_group in potential_duplicate_groups:  
-        if count % 20000 == 0:
+        if count % 10000 == 0:
             print "\tFinish analysing " \
                 + str(float(count)/len(potential_duplicate_groups)*100) \
                 + "% (" + str(count) + "/" + str(len(potential_duplicate_groups)) \
                 + ") possible duplicate groups."
-            print "\tStatistic about merges based on different features: " + str(statistic)
+            print "\tStatistic about merges based on different features: " + str(statistic) + " " + str(no_paper_statistic)
         count += 1
 
         author_A = potential_duplicate_group[0]
         author_B = potential_duplicate_group[1]
 
         if author_A not in author_paper_stat or author_B not in author_paper_stat:
+            # if id_name_dict[author_A][0] == id_name_dict[author_B][0]:
+            #     no_paper_statistic[0] += 1
+            #     if metapaths.AO.getrow(author_A).multiply(metapaths.AO.getrow(author_B)).sum() > 0:
+            #         no_paper_statistic[1] += 1
+            #         real_duplicate_groups.add(potential_duplicate_group)
             continue
 
         if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]]):
@@ -276,6 +310,11 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
 
         similarity = compute_similarity_score(author_A, author_B, metapaths)
         if max(similarity) >= merge_threshold:
+            if max(similarity) == merge_threshold:
+                name_A = id_name_dict[author_A][0]
+                name_B = id_name_dict[author_B][0]
+                if name_A == '' or name_B == '':
+                    continue
             real_duplicate_groups.add(potential_duplicate_group)
             statistic[similarity.index(max(similarity))] += 1
 

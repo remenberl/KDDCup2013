@@ -11,6 +11,7 @@ asian_units = taiwan_units.union(chinese_units)
 asian_last_names = korean_last_names.union(taiwan_last_names.union(chinese_last_names))
 nickname_set = set()
 nickname_dict = {}
+nickname_initials_set = set()
 for name_group in nicknames:
     for name1 in name_group:
         name1 = name1.lower()
@@ -19,6 +20,10 @@ for name_group in nicknames:
             if name1 != name2:
                 nickname_set.add((name1, name2))
                 nickname_set.add((name2, name1))
+                nickname_initials_set.add((name1, name2[0]))
+                nickname_initials_set.add((name2, name1[0]))
+                nickname_initials_set.add((name1[0], name2))
+                nickname_initials_set.add((name2[0], name1))
                 nickname_dict.setdefault(name1, set()).add(name2)
                 nickname_dict.setdefault(name2, set()).add(name1)
 

@@ -65,9 +65,10 @@ def run_from_step(step):
         refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, metapaths)
         iter_num -= 1
     final_filter(authors_duplicates_dict, name_instance_dict, id_name_dict)
+
     print "\nStep 6/6: Generate submission files"
     save_result(authors_duplicates_dict, name_instance_dict, id_name_dict)
        
 
 if __name__ == '__main__':
-    run_from_step(5)
+    run_from_step(2)
