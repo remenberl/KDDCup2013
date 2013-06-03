@@ -5,14 +5,16 @@ from name import *
 from difflib import SequenceMatcher
 import re
 import itertools
+import fuzzy
 
 normalized_feature_dict = {}
+soundex = fuzzy.Soundex(4)
 
 def is_substr(s1, s2):
     """Does `s1` appear in sequence in `s2`?"""
     return bool(re.search(".*".join(s1), s2)) or bool(re.search(".*".join(s2), s1))
 
-def my_string_match_score(s1, s2):
+def my_string_match_score(s1, s2, name_statistics, is_asian=False):
     elements_s1 = s1.split(" ")
     elements_s2 = s2.split(" ")
 
@@ -21,6 +23,8 @@ def my_string_match_score(s1, s2):
         for element2 in elements_s2:
             if (element1, element2) in nickname_set or (element1, element2) in nickname_initials_set:
                 count += 1
+                continue
+            if element1 == '' or element2 == '':
                 continue
             if element1[0] != element2[0]:
                 continue
@@ -31,14 +35,40 @@ def my_string_match_score(s1, s2):
             if len(element1) != 1 and len(element2) == 1:
                 count += 1
             if len(element1) != 1 and len(element2) != 1:
-                if SequenceMatcher(None, element1, element2).ratio() > 0.85:
-                    count += 1
+                if is_asian:
+                    if SequenceMatcher(None, element1, element2).ratio() > 0.90:
+                        if element1 == element2 and element1 in name_statistics and name_statistics[element1] <= 10:
+                            count += 5
+                        else:
+                            count += 1
+                else:
+                    element1 = element1.lower()
+                    element2 = element2.lower()
+                    ldis = SequenceMatcher(None, element1, element2).ratio()
+                    if ldis > 0.85 or \
+                            (ldis > 0.80 and abs(int(soundex(element1)[1:]) - int(soundex(element2)[1:])) <= 2):
+                        if element1 == element2 and element1 in name_statistics and name_statistics[element1] <= 10:
+                            count += 5
+                        else:
+                            count += 1
+
     if elements_s1[-1] != elements_s2[-1]:
-        if SequenceMatcher(None, elements_s1[-1], elements_s2[-1]).ratio() <= 0.85:
-            if elements_s1[-1][:-1] == elements_s2[-1][:-1] \
-                    or elements_s1[-1][:-1] == elements_s2[-1] \
-                    or elements_s1[-1] == elements_s2[-1][:-1]:
-                count += 1
+        if is_asian:
+            if SequenceMatcher(None, elements_s1[-1], elements_s2[-1]).ratio() <= 0.90:
+                if elements_s1[-1][:-1] == elements_s2[-1][:-1] \
+                        or elements_s1[-1][:-1] == elements_s2[-1] \
+                        or elements_s1[-1] == elements_s2[-1][:-1]:
+                    count += 1
+        else:
+            element1 = elements_s1[-1].lower()
+            element2 = elements_s2[-1].lower()
+            ldis = SequenceMatcher(None, element1, element2).ratio()
+            if ldis <= 0.85 and \
+                        (ldis <= 0.80 or abs(int(soundex(element1)[1:]) - int(soundex(element2)[1:])) > 2):
+                if elements_s1[-1][:-1] == elements_s2[-1][:-1] \
+                        or elements_s1[-1][:-1] == elements_s2[-1] \
+                        or elements_s1[-1] == elements_s2[-1][:-1]:
+                    count += 1
     return count
 
 
@@ -54,10 +84,9 @@ def is_name_reorder(name_instance_A, name_instance_B):
     else:
         return False
 
-def single_name_comparable(name_instance_A, name_instance_B):
+def single_name_comparable(name_instance_A, name_instance_B, name_statistics):
     name_A = name_instance_A.name
     name_B = name_instance_B.name
-
 
 
     if name_instance_A.is_asian and name_instance_B.is_asian:
@@ -83,9 +112,12 @@ def single_name_comparable(name_instance_A, name_instance_B):
     if name_A.replace(' ', '') == name_B.replace(' ', ''):
         return True
 
-    if my_string_match_score(name_instance_A.name, name_instance_B.name) <= 1:
+    score = my_string_match_score(name_instance_A.name, name_instance_B.name, name_statistics, name_instance_A.is_asian or name_instance_B.is_asian)
+    if score <= 1:
         return False
 
+    if score >= 10:
+        return True
     # if is_substr(name_A.replace(' ', ''), name_B.replace(' ', '')) and len(name_A) > 10 and len(name_B) > 10:
     #     return True
     if (name_instance_A.first_name, name_instance_B.first_name) not in nickname_set and (name_instance_A.first_name, name_instance_B.first_name) not in nickname_initials_set:
@@ -102,8 +134,16 @@ def single_name_comparable(name_instance_A, name_instance_B):
                 if (name_instance_A.first_name.find(name_instance_B.first_name) < 0 and name_instance_A.first_name.find(name_instance_B.first_name) < 0) \
                         or (name_instance_A.middle_name == '' and name_instance_B.middle_name == ''):
                     if not name_instance_A.bad_name_flag and not name_instance_B.bad_name_flag:
-                        if SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.first_name[1:]).ratio() < 0.93:
-                            return False
+                        first_name_1 = name_instance_A.first_name.lower()
+                        first_name_2 = name_instance_B.first_name.lower()
+                        if name_instance_A.is_asian or name_instance_B.is_asian:
+                            if SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.first_name[1:]).ratio() < 0.93:
+                                return False
+                        else:
+                            ldis = SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.first_name[1:]).ratio() 
+                            if ldis < 0.93 and\
+                                    (ldis < 0.80 or soundex(first_name_1) != soundex(first_name_2)):
+                                return False
                     else:
                         if SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.first_name[1:]).ratio() < 0.5:
                             return False
@@ -120,74 +160,87 @@ def single_name_comparable(name_instance_A, name_instance_B):
     #         if not is_substr(name_instance_A.last_name.replace(' ', ''), name_instance_B.last_name.replace(' ', '')):
     #             if SequenceMatcher(None, name_instance_A.last_name[1:], name_instance_B.last_name[1:]).ratio() < 0.5:
     #                 return False
-
     if name_instance_A.first_name[0] != name_instance_B.first_name[0] and (name_instance_A.first_name, name_instance_B.first_name) not in nickname_initials_set:
         if len(name_instance_B.middle_name) > 0:
             if name_instance_A.first_name[0] == name_instance_B.middle_name[0]:
                 if len(name_instance_A.first_name) > 1 and len(name_instance_B.middle_name) > 1:
-                    if my_string_match_score(name_instance_A.first_name, name_instance_B.middle_name) == 0:
+                    if my_string_match_score(name_instance_A.first_name, name_instance_B.middle_name, name_statistics) == 0:
                         return False
+            else:
+                if my_string_match_score(name_instance_A.name + ' ' + name_instance_A.middle_name, \
+                        name_instance_B.first_name + ' ' + name_instance_B.first_name, name_statistics) == 0:
+                        # if SequenceMatcher(None, name_instance_A.middle_name[1:], name_instance_B.first_name[1:]).ratio() <= 0.9:
+                    return False
                     # if SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.middle_name[1:]).ratio() <= 0.9:
                     #         return False
         if len(name_instance_A.middle_name) > 0:
             if name_instance_B.first_name[0] == name_instance_A.middle_name[0]:
                 if len(name_instance_B.first_name) > 1 and len(name_instance_A.middle_name) > 1:
-                    if my_string_match_score(name_instance_A.middle_name, name_instance_B.first_name) == 0:
+                    if my_string_match_score(name_instance_A.middle_name, name_instance_B.first_name, name_statistics) == 0:
                         # if SequenceMatcher(None, name_instance_A.middle_name[1:], name_instance_B.first_name[1:]).ratio() <= 0.9:
                         return False
+            else:
+                if my_string_match_score(name_instance_A.name + ' ' + name_instance_A.middle_name, \
+                        name_instance_B.first_name + ' ' + name_instance_B.first_name, name_statistics) == 0:
+                        # if SequenceMatcher(None, name_instance_A.middle_name[1:], name_instance_B.first_name[1:]).ratio() <= 0.9:
+                    return False
 
     if name_instance_A.last_name != name_instance_B.last_name:
         if SequenceMatcher(None, name_instance_A.last_name[1:], name_instance_B.last_name[1:]).ratio() <= 0.5:
             return False
         # if name_instance_A.middle_name != name_instance_B.middle_name and name_instance_A.first_name != name_instance_B.first_name:
         #     return False
-
     return True
 
 
-def __name_comparable(name_instance_A, name_instance_B):
-    if single_name_comparable(name_instance_A, name_instance_B):
+def __name_comparable(name_instance_A, name_instance_B, name_statistics, strict_mode=True):
+    if single_name_comparable(name_instance_A, name_instance_B, name_statistics):
         return True
     
     name_A = '- '.join([name_instance_A.last_name, name_instance_A.middle_name, name_instance_A.first_name]).strip()
     new_name_instance_A = Name(name_A)
     new_name_instance_A.is_asian = name_instance_A.is_asian
-    if single_name_comparable(new_name_instance_A, name_instance_B):
+    if single_name_comparable(new_name_instance_A, name_instance_B, name_statistics):
         return True
 
     name_A = '- '.join([name_instance_A.middle_name, name_instance_A.last_name, name_instance_A.first_name]).strip()
     new_name_instance_A = Name(name_A)
     new_name_instance_A.is_asian = name_instance_A.is_asian
-    if single_name_comparable(new_name_instance_A, name_instance_B):
+    if single_name_comparable(new_name_instance_A, name_instance_B, name_statistics):
         return True
 
     name_A = '- '.join([name_instance_A.last_name, name_instance_A.first_name, name_instance_A.middle_name]).strip()
     new_name_instance_A = Name(name_A)
     new_name_instance_A.is_asian = name_instance_A.is_asian
-    if single_name_comparable(new_name_instance_A, name_instance_B):
+    if single_name_comparable(new_name_instance_A, name_instance_B, name_statistics):
         return True
 
     name_A = '- '.join([name_instance_A.middle_name, name_instance_A.first_name, name_instance_A.last_name]).strip()
     new_name_instance_A = Name(name_A)
-    if new_name_instance_A.name == name_instance_B.name:
-        return True
+    new_name_instance_A.is_asian = name_instance_A.is_asian
+    if strict_mode:
+        if new_name_instance_A.name == name_instance_B.name:
+            return True
+    else:
+        if single_name_comparable(new_name_instance_A, name_instance_B, name_statistics):
+            return True
 
     name_A = '- '.join([name_instance_A.first_name, name_instance_A.last_name, name_instance_A.middle_name]).strip()
     new_name_instance_A = Name(name_A)
     new_name_instance_A.is_asian = name_instance_A.is_asian
-    if single_name_comparable(new_name_instance_A, name_instance_B):
+    if single_name_comparable(new_name_instance_A, name_instance_B, name_statistics):
         return True
 
     return False
 
-def name_comparable(name_instance_A, name_instance_B):
-    return __name_comparable(name_instance_A, name_instance_B) or __name_comparable(name_instance_B, name_instance_A)
+def name_comparable(name_instance_A, name_instance_B, name_statistics, strict_mode=True):
+    return __name_comparable(name_instance_A, name_instance_B, name_statistics, strict_mode) or __name_comparable(name_instance_B, name_instance_A, name_statistics, strict_mode)
     
 
-def name_group_comparable(group, name_instance_dict, id_name_dict):
+def name_group_comparable(group, name_instance_dict, id_name_dict, name_statistics):
     for author_A in group:
         for author_B in group:
-            if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]]):
+            if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]], name_statistics, False):
                 # print "\t\tConflicted name group: " + id_name_dict[author_A][0] + '\tv.s.\t' + id_name_dict[author_B][0]
                 return False
     return True
@@ -265,7 +318,7 @@ def is_simple_name(name):
         return True
     return False
 
-def local_clustering(potential_duplicate_groups, author_paper_stat, name_instance_dict, id_name_dict, metapaths):
+def local_clustering(potential_duplicate_groups, author_paper_stat, name_instance_dict, id_name_dict, name_statistics, metapaths):
     """Detect duplicate groups based on coauthor relationship between authors.
 
     Parameters:
@@ -284,28 +337,27 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
 
     normalized_feature_dict = {}
     similarity_dict = {}
-    no_paper_statistic = [0] * 2
     for potential_duplicate_group in potential_duplicate_groups:  
         if count % 10000 == 0:
             print "\tFinish analysing " \
                 + str(float(count)/len(potential_duplicate_groups)*100) \
                 + "% (" + str(count) + "/" + str(len(potential_duplicate_groups)) \
                 + ") possible duplicate groups."
-            print "\tStatistic about merges based on different features: " + str(statistic) + " " + str(no_paper_statistic)
+            print "\tStatistic about merges based on different features: " + str(statistic)
         count += 1
 
         author_A = potential_duplicate_group[0]
         author_B = potential_duplicate_group[1]
 
         if author_A not in author_paper_stat or author_B not in author_paper_stat:
-            # if id_name_dict[author_A][0] == id_name_dict[author_B][0]:
-            #     no_paper_statistic[0] += 1
-            #     if metapaths.AO.getrow(author_A).multiply(metapaths.AO.getrow(author_B)).sum() > 0:
-            #         no_paper_statistic[1] += 1
-            #         real_duplicate_groups.add(potential_duplicate_group)
             continue
 
-        if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]]):
+        if id_name_dict[author_A][0] not in name_instance_dict or id_name_dict[author_B][0] not in name_instance_dict:
+            print id_name_dict[author_A][0] + str(author_A)
+            print id_name_dict[author_B][0] + str(author_B)
+            continue
+
+        if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]], name_statistics):
             continue
 
         similarity = compute_similarity_score(author_A, author_B, metapaths)
@@ -353,10 +405,10 @@ def merge_local_clusters(real_duplicate_groups, id_name_dict):
     return authors_duplicates_dict
 
 
-def find_conflict_name(authors_duplicates_dict, name_instance_dict, id_name_dict):
+def find_conflict_name(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics):
     conflict_ids = set()
     for (author_id, duplicate_group) in authors_duplicates_dict.iteritems():
-        if not name_group_comparable(duplicate_group, name_instance_dict, id_name_dict):
+        if not name_group_comparable(duplicate_group, name_instance_dict, id_name_dict, name_statistics):
             conflict_ids.add(author_id)
     return conflict_ids
 
@@ -400,7 +452,7 @@ def find_closure(authors_duplicates_dict):
         authors_duplicates_dict[author_id].remove(author_id)
 
 
-def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_dict, metapaths):
+def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_dict, metapaths):
     for author_id in authors_duplicates_dict.iterkeys():
         if author_id in authors_duplicates_dict[author_id]:
             authors_duplicates_dict[author_id].remove(author_id)
@@ -409,14 +461,14 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, sim
     for author_id in authors_duplicates_dict.iterkeys():
         for duplicate_author_id in set(authors_duplicates_dict[author_id]):
             if not name_comparable(name_instance_dict[id_name_dict[author_id][0]], \
-                    name_instance_dict[id_name_dict[duplicate_author_id][0]]):
+                    name_instance_dict[id_name_dict[duplicate_author_id][0]], name_statistics, False):
                 authors_duplicates_dict[author_id].remove(duplicate_author_id)
                 if author_id in authors_duplicates_dict[duplicate_author_id]:
                     authors_duplicates_dict[duplicate_author_id].remove(author_id)
                 count += 1
     print "\tRemoving " + str(count) + " author_ids from name comparison."
 
-    conflict_ids = find_conflict_name(authors_duplicates_dict, name_instance_dict, id_name_dict)
+    conflict_ids = find_conflict_name(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics)
     max_similarity_dict = {}
     for author_id in conflict_ids:
         pool = authors_duplicates_dict[author_id]
@@ -433,7 +485,7 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, sim
         group = [author_id]
         for candidate in pool:
             group.append(candidate)
-            if not name_group_comparable(group, name_instance_dict, id_name_dict):
+            if not name_group_comparable(group, name_instance_dict, id_name_dict, name_statistics):
                 group.pop()
         for id in authors_duplicates_dict[author_id]:
             if id not in group and author_id in authors_duplicates_dict[id]:

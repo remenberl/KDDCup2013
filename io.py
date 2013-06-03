@@ -105,9 +105,14 @@ def load_author_files(name_statistics):
                     new_elements = list()
                     for element in elements:
                         if element.lower() in name_statistics:
-                            if len(element) < 3 and name_statistics[element.lower()] <= 1:
-                                new_elements.append(re.sub(r"(?<=\w)([A-Z])", r" \1", element))
-                            elif len(element) >= 3 and name_statistics[element.lower()] <= 1:
+                            if len(element) <= 3 and element != elements[-1]:
+                                if name_statistics[element.lower()] <= 3: 
+                                    new_elements.append(re.sub(r"(?<=\w)([A-Z])", r" \1", element))
+                                elif element.lower() not in asian_units and element.lower() not in asian_last_names and name_statistics[element.lower()] <= 10:
+                                    new_elements.append(re.sub(r"(?<=\w)([A-Z])", r" \1", element))
+                                else:
+                                    new_elements.append(element)
+                            elif len(element) > 3 and name_statistics[element.lower()] <= 1:
                                 if element.lower()[:-1] not in name_statistics or name_statistics[element.lower()[:-1]] <= 1:
                                     new_elements.append(re.sub(r"(?<=\w)([A-Z])", r" \1", element))
                                 else:

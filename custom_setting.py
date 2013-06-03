@@ -12,7 +12,7 @@ duplicate_authors_full_name_file = "./result/duplicate_authors_fullname.csv"
 merge_threshold = 0.00000000001
 word_title_count_threshold = 1000000
 
-version = "v2_6"
+version = "v2_8"
 serialization_dir = "./serialize/"
 coauthor_matrix_file = "coauthor.seal" + '.' + version
 covenue_matrix_file = "covenue.seal" + '.' + version

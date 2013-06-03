@@ -24,6 +24,8 @@ for name_group in nicknames:
                 nickname_initials_set.add((name2, name1[0]))
                 nickname_initials_set.add((name1[0], name2))
                 nickname_initials_set.add((name2[0], name1))
+                nickname_initials_set.add((name1[0], name2[0]))
+                nickname_initials_set.add((name2[0], name1[0]))
                 nickname_dict.setdefault(name1, set()).add(name2)
                 nickname_dict.setdefault(name2, set()).add(name1)
 
@@ -108,7 +110,10 @@ class Name:
             self.__name_process(name.replace('.', ' ').replace('-', ''), 1)
         else:
             self.is_asian = False
-            self.__name_process(name.replace('.', ' ').replace('-', ' '), 1)
+            if is_asian_name(name.strip().lower().split(' ')[-1][:-1]):
+                self.__name_process(name.replace('.', ' ').replace('-', ''), 1)
+            else:
+                self.__name_process(name.replace('.', ' ').replace('-', ' '), 1)
         if not quick:
             self.alternatives = set()
             self.author_ids = set()
