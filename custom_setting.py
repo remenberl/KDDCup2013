@@ -1,7 +1,7 @@
 #-*- coding: UTF-8 -*-
 
-author_file = "./data/Author.csv"
-paper_author_file = "./data/PaperAuthor.csv"
+author_file = "./data/Author_refined_simple.csv"
+paper_author_file = "./data/PaperAuthor_refined_simple.csv"
 paper_file = './data/sanitizedPaper.csv'
 stopword_file = './data/Stopword.csv'
 

@@ -301,7 +301,7 @@ def compute_similarity_score(author_A, author_B, metapaths):
              1000 * normalized_feature_A[7].multiply(normalized_feature_B[3]).sum(),
              100 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum(),
              100000 * normalized_feature_A[5].multiply(normalized_feature_B[5]).sum(), 
-             1000000 * normalized_feature_A[6].multiply(normalized_feature_B[6]).sum(),
+             10000000 * normalized_feature_A[6].multiply(normalized_feature_B[6]).sum(),
              1000 * normalized_feature_A[7].multiply(normalized_feature_B[7]).sum(), #APAPA
              1000 * normalized_feature_A[8].multiply(normalized_feature_B[8]).sum(), #AKA
              1000 * normalized_feature_A[9].multiply(normalized_feature_B[9]).sum(), #APAPV
@@ -338,7 +338,7 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
     normalized_feature_dict = {}
     similarity_dict = {}
     for potential_duplicate_group in potential_duplicate_groups:  
-        if count % 10000 == 0:
+        if count % 30000 == 0:
             print "\tFinish analysing " \
                 + str(float(count)/len(potential_duplicate_groups)*100) \
                 + "% (" + str(count) + "/" + str(len(potential_duplicate_groups)) \
@@ -361,12 +361,22 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
             continue
 
         similarity = compute_similarity_score(author_A, author_B, metapaths)
+        if author_A == 135353:
+            print id_name_dict[author_A][0] + ' vs ' + id_name_dict[author_B][0]
+            print similarity
         if max(similarity) >= merge_threshold:
             if max(similarity) == merge_threshold:
                 name_A = id_name_dict[author_A][0]
                 name_B = id_name_dict[author_B][0]
                 if name_A == '' or name_B == '':
                     continue
+                # if SequenceMatcher(None, name_instance_dict[name_A].last_name, name_instance_dict[name_B].last_name).ratio() > 0.6:
+                #     if name_A.last_name != name_B.last_name and \
+                #             name_A.last_name[:-1] != name_B.last_name and \
+                #             name_A.last_name != name_B.last_name[:-1] and \
+                #             name_A.last_name[:-1] != name_B.last_name[:-1]:
+                #         continue
+
             real_duplicate_groups.add(potential_duplicate_group)
             statistic[similarity.index(max(similarity))] += 1
 
@@ -469,38 +479,103 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, nam
     print "\tRemoving " + str(count) + " author_ids from name comparison."
 
     conflict_ids = find_conflict_name(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics)
-    max_similarity_dict = {}
+    subset_similarity_dict = {}
+    new_group_set = set()
     for author_id in conflict_ids:
         pool = authors_duplicates_dict[author_id]
-        for candi in pool:
-            if tuple(sorted((author_id, candi))) not in similarity_dict:
-                similarity_dict[tuple(sorted((author_id, candi)))] = max(compute_similarity_score(author_id, candi, metapaths))
-        max_similarity_dict[author_id] = max([similarity_dict[tuple(sorted((author_id, candi)))] for candi in authors_duplicates_dict[author_id]])
+        pool.add(author_id)
+        for id in pool:
+            new_group_set.add((id,))
+        for candi1 in pool:
+            for candi2 in pool:
+                if candi1 != candi2:
+                    if tuple(sorted((candi1, candi2))) not in similarity_dict:
+                        similarity_dict[tuple(sorted((candi1, candi2)))] = max(compute_similarity_score(candi1, candi2, metapaths))
+                    subset_similarity_dict[tuple(sorted((candi1, candi2)))] = similarity_dict[tuple(sorted((candi1, candi2)))]
 
-    conflict_ids = sorted(conflict_ids, key=lambda candi: -max_similarity_dict[candi])
-    count = 0
+    sorted_author_pairs = sorted(subset_similarity_dict.keys(), key=lambda candi: -subset_similarity_dict[candi])
+
+    for author_pair in sorted_author_pairs:
+        author1 = author_pair[0]
+        author2 = author_pair[1]
+        group1 = tuple()
+        for group in new_group_set:
+            if author1 in group:
+                group1 = group
+            if author2 in group:
+                group2 = group
+        if group1 == group2:
+            continue
+        new_group = set(group1 + group2)
+        if not name_group_comparable(new_group, name_instance_dict, id_name_dict, name_statistics):
+            continue
+        else:
+            new_group = tuple(sorted(new_group))
+        if group1 in new_group_set:
+            new_group_set.remove(group1)
+        if group2 in new_group_set:
+            new_group_set.remove(group2)
+        new_group_set.add(new_group)
+
     for author_id in conflict_ids:
-        pool = authors_duplicates_dict[author_id]
-        pool = sorted(pool, key=lambda candi: -similarity_dict[tuple(sorted((author_id, candi)))])
-        group = [author_id]
-        for candidate in pool:
-            group.append(candidate)
-            if not name_group_comparable(group, name_instance_dict, id_name_dict, name_statistics):
-                group.pop()
+        new_group = authors_duplicates_dict[author_id]
+        for group in new_group_set:
+            if author_id in group:
+                new_group = group
         for id in authors_duplicates_dict[author_id]:
-            if id not in group and author_id in authors_duplicates_dict[id]:
+            if id not in new_group and author_id in authors_duplicates_dict[id]:
                 authors_duplicates_dict[id].remove(author_id)
-        authors_duplicates_dict[author_id] = set(group)
-        count += 1
-        if count % 100 == 0:
-            print "\tFinish analysing " \
-                + str(float(count)/len(conflict_ids)*100) \
-                + "% (" + str(count) + "/" + str(len(conflict_ids)) \
-                + ") conflict_ids."
+        authors_duplicates_dict[author_id] = set(new_group)
+
+    # count = 0
+    # for author_id in conflict_ids:
+    #     pool = authors_duplicates_dict[author_id]
+    #     pool = sorted(pool, key=lambda candi: -similarity_dict[tuple(sorted((author_id, candi)))])
+    #     group = [author_id]
+    #     for candidate in pool:
+    #         group.append(candidate)
+    #         if not name_group_comparable(group, name_instance_dict, id_name_dict, name_statistics):
+    #             group.pop()
+    #     for id in authors_duplicates_dict[author_id]:
+    #         if id not in group and author_id in authors_duplicates_dict[id]:
+    #             authors_duplicates_dict[id].remove(author_id)
+    #     authors_duplicates_dict[author_id] = set(group)
+    #     count += 1
+    #     if count % 100 == 0:
+    #         print "\tFinish analysing " \
+    #             + str(float(count)/len(conflict_ids)*100) \
+    #             + "% (" + str(count) + "/" + str(len(conflict_ids)) \
+    #             + ") conflict_ids."
 
     for author_id in authors_duplicates_dict.iterkeys():
         if author_id in authors_duplicates_dict[author_id]:
             authors_duplicates_dict[author_id].remove(author_id)
+
+def pre_filter(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_dict, metapaths):
+    count = 0
+    for (author_id, group) in authors_duplicates_dict.iteritems():
+        elements = id_name_dict[author_id][0].split()
+        i = 0
+        for element in elements:
+            if len(element) > 1:
+                i += 1
+        if i >= 2:
+            continue
+        to_remove_set = set()
+        for id in group:
+            if id_name_dict[author_id][0] != id_name_dict[id][0]:
+                if tuple(sorted((author_id, id))) not in similarity_dict:
+                    similarity_dict[tuple(sorted((author_id, id)))] = max(compute_similarity_score(author_id, id, metapaths))
+                if similarity_dict[tuple(sorted((author_id, id)))] <= 30:
+                    to_remove_set.add(id)
+        for id in to_remove_set:
+            authors_duplicates_dict[author_id].remove(id)
+            count += 1
+            if author_id in authors_duplicates_dict[id]:
+                authors_duplicates_dict[id].remove(author_id)
+    print "\tFinish removing " + str(float(count)) \
+                + " unconfident names."
+
 
 
 def final_filter(authors_duplicates_dict, name_instance_dict, id_name_dict):
@@ -526,8 +601,14 @@ def final_filter(authors_duplicates_dict, name_instance_dict, id_name_dict):
                         to_remove_set.add(id)
                         count += 1
                         print '\t\tRemoving ' + name_B + ' from duplicates_set of ' + name_A
-
             for id in to_remove_set:
                 authors_duplicates_dict[author_id].remove(id)
+    
     print "\tFinish removing " + str(float(count)) \
                 + " unconfident names."
+
+    for author_id in authors_duplicates_dict.iterkeys():
+        if id_name_dict[author_id][1] == '':
+            authors_duplicates_dict[author_id] = set()
+    
+    

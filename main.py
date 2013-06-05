@@ -11,6 +11,7 @@ def run_from_step(step):
     print "Step 1/6: Load files"
     (name_instance_dict, id_name_dict, name_statistics, author_paper_stat, metapaths) = load_files()
     print "\nStep 2/6: Find similar ids to increase recall"
+
     if step <= 2:
         add_similar_ids_under_name(name_instance_dict, id_name_dict)
         print "\tSaving files generated in this step for debug."
@@ -35,8 +36,6 @@ def run_from_step(step):
         potential_duplicate_groups = cPickle.load(
                 open(serialization_dir + potential_duplicate_groups_file, "rb"))
 
-
-
     print "\nStep 4/6: Find and merge local clusters"
     if step <= 4:
         (real_duplicate_groups, similarity_score_dict) = local_clustering(potential_duplicate_groups, author_paper_stat, \
@@ -56,6 +55,7 @@ def run_from_step(step):
  
     print "\nStep 5/6: Obtain the closure, then filter noisy names"   
     authors_duplicates_dict = merge_local_clusters(real_duplicate_groups, id_name_dict)
+    # pre_filter(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, metapaths)
     iter_num = 3
     while iter_num > 0:
         find_closure(authors_duplicates_dict)

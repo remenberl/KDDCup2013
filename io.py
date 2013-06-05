@@ -98,7 +98,7 @@ def load_author_files(name_statistics):
                 author_id = int(row[0])
                 author_name = row[1]
 
-                elements = author_name.split(" ")
+                elements = author_name.split()
                 if author_name.upper()[:-1] == author_name[:-1]:
                     new_elements = elements
                 else:
@@ -129,6 +129,34 @@ def load_author_files(name_statistics):
                     author.add_author_id(int(row[0]))
                     name_instance_dict[author.name] = author
 
+        with open(author_file, 'rb') as csv_file:
+            author_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
+            #skip first line
+            next(author_reader)
+            count = 0
+            for row in author_reader:
+                count += 1
+                if count % 20000 == 0:
+                    print "\tFinish analysing " \
+                        + str(count) + " lines of the file."
+                author_id = int(row[0])
+                author_name = row[1]
+                if author_name == '':
+                    continue
+                elements = author_name.split()
+                new_elements = list()
+                if len(elements[0]) > 1 and len(elements[0]) <= 5 and name_statistics[elements[0].lower()] <= 20:
+                    new_elements.append(re.sub(r"(?<=\w)([a-zA-Z])", r" \1", elements[0]))
+                    for element in elements[1:]:
+                        new_elements.append(element)
+                    author = Name(' '.join(new_elements))
+                    if author.name in name_instance_dict:
+                        id_name_dict[author_id] = [author.name, row[1]]
+                        if author.name in name_instance_dict:
+                            name_instance_dict[author.name].add_author_id(int(row[0]))
+                        else:
+                            author.add_author_id(int(row[0]))
+                            name_instance_dict[author.name] = author
         print "\tWriting into serialization files related to authors.\n"
         cPickle.dump(
             name_instance_dict,
@@ -498,10 +526,40 @@ def load_author_affili_matrix_files():
         print "\tSerialization files related to author_affiliation do not exist."
         dict_author_affi = dict()
         dict_affi = dict()
-        dict_affi_frequency = dict()
-        cnt_affi = 1 
+        cnt_affi = 1
         cnt_line = 0
+        word_count = {}
+        with open(author_file, 'rb') as csv_file:
+            author_reader = csv.reader(csv_file, delimiter=',', quotechar='"') 
+            next(author_reader) 
+            for row in author_reader:
+                author_affili = row[2].strip().lower()
+                author_affilis = re.sub('[^a-zA-Z ]', ' ', author_affili)
+                words = author_affilis.split()
+                for word in words:
+                    if word != '':
+                        word_count[word] = word_count.setdefault(word, 0) + 1
+        with open(paper_author_file, 'rb') as csv_file:
+            paper_author_reader = csv.reader(csv_file, delimiter=',', quotechar='"') 
+            next(paper_author_reader) 
+            for row in paper_author_reader:
+                cnt_line += 1
+                if cnt_line % 2000000 == 0:
+                    print "\tFinish analysing " + str(cnt_line) + " lines of the file."
+                author_id = int(row[1])
+                author_affili = row[3].strip().lower()
+                author_affilis = re.sub('[^a-zA-Z ]', ' ', author_affili)
+                words = author_affilis.split()
+                for word in words:
+                    if word != '':
+                        word_count[word] = word_count.setdefault(word, 0) + 1
 
+        word_list = list(word_count.iterkeys())
+        for word in word_list:
+            if word_count[word] > 10000:
+                del word_count[word]
+        sorted_ = sorted(word_count.items(), key=lambda x: -x[1])
+        print sorted_[0:20]
         with open(author_file, 'rb') as csv_file:
             author_reader = csv.reader(csv_file, delimiter=',', quotechar='"') 
             next(author_reader) 
@@ -512,22 +570,19 @@ def load_author_affili_matrix_files():
                 author_id = int(row[0])
                 author_affili = row[2].strip().lower()
                 if author_affili != '':
-                    author_affilis = author_affili.replace(',', '|').replace('-','|').split('|')
-                    for author_affili in author_affilis:
-                        author_affili = author_affili.strip()
-                        if author_affili == '':
+                    author_affilis = re.sub('[^a-zA-Z ]', ' ', author_affili)
+                    words = author_affilis.split()
+                    for word in words:
+                        if word == '':
                             continue
-                        if author_affili not in dict_affi: 
-                            dict_affi[author_affili] = cnt_affi
-                            cnt_affi += 1
-                            dict_affi_frequency[author_affili] = 1
-                        else:
-                            dict_affi_frequency[author_affili] += 1
-                        if author_id not in dict_author_affi:
-                            dict_author_affi[author_id] = [author_affili]
-                        else:
-                            dict_author_affi[author_id] += [author_affili]
-
+                        if word in word_count:
+                            if word not in dict_affi: 
+                                dict_affi[word] = cnt_affi
+                                cnt_affi += 1
+                                if author_id not in dict_author_affi:
+                                    dict_author_affi[author_id] = [word]
+                                else:
+                                    dict_author_affi[author_id] += [word]
         with open(paper_author_file, 'rb') as csv_file:
             paper_author_reader = csv.reader(csv_file, delimiter=',', quotechar='"') 
             next(paper_author_reader) 
@@ -538,22 +593,19 @@ def load_author_affili_matrix_files():
                 author_id = int(row[1])
                 author_affili = row[3].strip().lower()
                 if author_affili != '':
-                    author_affilis = author_affili.replace(',', '|').replace('-','|').split('|')
-                    for author_affili in author_affilis:
-                        author_affili = author_affili.strip()
-                        if author_affili == '':
+                    author_affilis = re.sub('[^a-zA-Z ]', ' ', author_affili)
+                    words = author_affilis.split()
+                    for word in words:
+                        if word == '':
                             continue
-                        if author_affili not in dict_affi:
-                            dict_affi[author_affili] = cnt_affi
-                            cnt_affi += 1
-                            dict_affi_frequency[author_affili] = 1
-                        else:
-                            dict_affi_frequency[author_affili] += 1
-                        if author_id not in dict_author_affi:
-                            dict_author_affi[author_id] = [author_affili]
-                        else:
-                            dict_author_affi[author_id] += [author_affili]
-
+                        if word in word_count:
+                            if word not in dict_affi:
+                                dict_affi[word] = cnt_affi
+                                cnt_affi += 1
+                            if author_id not in dict_author_affi:
+                                dict_author_affi[author_id] = [word]
+                            else:
+                                dict_author_affi[author_id] += [word]
         #nUniqueAffi is the number of unique affliations            
         nUniqueAffi = cnt_affi  
 

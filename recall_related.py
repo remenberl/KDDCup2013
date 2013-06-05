@@ -76,7 +76,7 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
             count += 1
             if count % 30000 == 0:
                 print "\t\tFinish matching " + str(float(count)/length*100)\
-                    + "% (" + str(count) + "/" + str(length) + ") names with the whole database."
+                    + "% (" + str(count) + "/" + str(length) + ") names containing noisy last character with the whole database."
     print
 
     count = 0
@@ -85,7 +85,7 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
             name_instance_dict[author_name_list[0]].bad_name_flag = True
             pool = init_full_dict[full_init_dict[author_name_list[0]]]
             for candidate in pool:
-                if SequenceMatcher(None, author_name_list[1], candidate).ratio() >= 0.9:
+                if SequenceMatcher(None, author_name_list[0], candidate).ratio() >= 0.9 or SequenceMatcher(None, author_name_list[1], candidate).ratio() >= 0.9:
                     name_instance_candidate = name_instance_dict[candidate]
                     for id in name_instance_dict[author_name_list[0]].author_ids:
                         name_instance_candidate.add_similar_author_id(id)
@@ -95,9 +95,26 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
             if count % 1000 == 0:
                 print "\t\tFinish matching " + str(count)\
                     + " names containing question mark or non askii characters with the whole database."
-
     print "\t\tIn total there exist " + str(count)\
-        + " names containing question marks or non askii characters.\n"
+        + " names containing question marks or non askii characters."
+    print
+
+    count = 0
+    for (author_id, author_name_list) in id_name_dict.iteritems():
+        pool = init_full_dict[full_init_dict[author_name_list[0]]]
+        for candidate in pool:
+            if SequenceMatcher(None, author_name_list[0], candidate).ratio() >= 0.94:
+                name_instance_candidate = name_instance_dict[candidate]
+                for id in name_instance_dict[author_name_list[0]].author_ids:
+                    name_instance_candidate.add_similar_author_id(id)
+                for id in name_instance_candidate.author_ids:
+                    name_instance_dict[author_name_list[0]].add_similar_author_id(id)                    
+        count += 1
+        if count % 20000 == 0:
+            print "\t\tFinish matching " + str(count)\
+                + " names with the whole database."
+    print
+
 
     count = 0
     for (author_name, name_instance) in name_instance_dict.iteritems():
