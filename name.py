@@ -231,6 +231,11 @@ class Name:
             candidates.add('')
             return candidates
 
+        elements = middle_name.split()
+        for element in elements:
+            candidates.add(' '.join([first_name, element, last_name]).strip())
+            candidates.add(' '.join([first_name, self.__shorten_string(element), last_name]).strip())
+
         #e.g., Michael Jr. Jordan
         candidates.add(' '.join([first_name, middle_name, last_name]).strip())
         #e.g., Michael Jordan
@@ -340,6 +345,14 @@ class Name:
             author_id: Id of the author.
         """
         self.author_ids.add(author_id)
+
+    def del_author_id(self, author_id):
+        """Delete author_id which matches the name from set author_ids.
+
+        Parameters:
+            author_id: Id of the author.
+        """
+        self.author_ids.remove(author_id)
 
     def add_similar_author_id(self, author_id):
         """Add author_id which has similar name into set similar_author_ids.

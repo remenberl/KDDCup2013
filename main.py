@@ -25,7 +25,7 @@ def run_from_step(step):
 
     print "\nStep 3/6: Create local clusters or potential_duplicate_groups"
     if step <= 3:
-        potential_duplicate_groups = create_potential_duplicate_groups(name_instance_dict)
+        potential_duplicate_groups = create_potential_duplicate_groups(name_instance_dict, author_paper_stat)
 
         print "\tSaving files generated in this step for debug."
         cPickle.dump(
@@ -62,7 +62,7 @@ def run_from_step(step):
         refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_score_dict, metapaths)
         iter_num -= 1
     # find_closure(authors_duplicates_dict)
-    final_filter(authors_duplicates_dict, name_instance_dict, id_name_dict)
+    final_filter(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, metapaths)
 
     print "\nStep 6/6: Generate submission files"
     save_result(authors_duplicates_dict, name_instance_dict, id_name_dict)
