@@ -47,19 +47,31 @@ def run_from_step(step):
         cPickle.dump(
                 similarity_score_dict,
                 open(serialization_dir + similarity_score_dict_file, "wb"), 2)
+        cPickle.dump(
+                name_instance_dict,
+                open(serialization_dir + "merged_" + name_instance_file, "wb"), 2)
+        cPickle.dump(
+                id_name_dict,
+                open(serialization_dir + "merged_" + id_name_file, "wb"), 2)
     else:
         real_duplicate_groups = cPickle.load(
                 open(serialization_dir + real_duplicate_groups_file, "rb"))
         similarity_score_dict = cPickle.load(
                 open(serialization_dir + similarity_score_dict_file, "rb"))
+        name_instance_dict = cPickle.load(
+                open(serialization_dir + 'merged_' + name_instance_file, "rb"))
+        id_name_dict = cPickle.load(
+                open(serialization_dir + 'merged_' + id_name_file, "rb"))
  
     print "\nStep 5/6: Obtain the closure, then filter noisy names"   
     authors_duplicates_dict = merge_local_clusters(real_duplicate_groups, id_name_dict)
     # pre_filter(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, metapaths)
-    iter_num = 3
+    find_closure(authors_duplicates_dict)
+    refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_score_dict, metapaths, True)
+    iter_num = 2
     while iter_num > 0:
         find_closure(authors_duplicates_dict)
-        refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_score_dict, metapaths)
+        refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_score_dict, metapaths, True)
         iter_num -= 1
     # find_closure(authors_duplicates_dict)
     final_filter(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_score_dict, metapaths)
@@ -69,4 +81,4 @@ def run_from_step(step):
        
 
 if __name__ == '__main__':
-    run_from_step(2)
+    run_from_step(5)

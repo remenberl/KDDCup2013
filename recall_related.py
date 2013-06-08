@@ -106,9 +106,9 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                         name_instance1.add_similar_author_id(id)  
 
 
-    first_name_pool = {}
+    name_unit_pool = {}
     length = len(name_instance_dict) - len(virtual_name_set)
-    print "\tBuilding first_name dict."
+    print "\tBuilding name unit dict."
     count = 0
     for (author_name, name_instance) in name_instance_dict.iteritems():
         if author_name not in virtual_name_set:
@@ -118,11 +118,11 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
             if count % 30000 == 0:
                 print "\t\tFinish computing " + str(float(count)/length*100)\
                     + "% (" + str(count) + "/" + str(length) + ") names' hash value."
-            first_name = name_instance.first_name
-            first_name_pool.setdefault(first_name, set()).add(author_name)
-    a = sorted(first_name_pool.keys(), key=lambda x: -len(first_name_pool[x]))
-    print a[0:10]
-    print "\tAdding similar ids for the same first_names."
+            elements = name_instance.name.split()
+            for element in elements:
+                name_unit_pool.setdefault(element, set()).add(author_name)
+    
+    print "\tAdding similar ids for the same name units."
     count = 0
     for (author_name1, name_instance1) in name_instance_dict.iteritems():
         if author_name1 not in virtual_name_set:
@@ -132,18 +132,19 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
             if count % 30000 == 0:
                 print "\t\tFinish comparing " + str(float(count)/length*100)\
                     + "% (" + str(count) + "/" + str(length) + ") names."
-            first_name = name_instance1.first_name
-            pool = first_name_pool[first_name]
-            for author_name2 in pool:
-                if author_name1 < author_name2: 
-                    if author_name1.find(author_name2) >=0 or author_name2.find(author_name1) >= 0:
-                        if abs(len(author_name1) - len(author_name2)) <= 3 and len(author_name1) >= 8 and len(author_name2) >= 8 or\
-                                len(author_name1) > 15 and len(author_name2) > 15:
-                            name_instance2 = name_instance_dict[author_name2]
-                            for id in name_instance1.author_ids:
-                                name_instance2.add_similar_author_id(id)
-                            for id in name_instance2.author_ids:
-                                name_instance1.add_similar_author_id(id)
+            elements = name_instance1.name.split()
+            for element in elements:
+                pool = name_unit_pool[element]
+                for author_name2 in pool:
+                    if author_name1 < author_name2: 
+                        if author_name1.find(author_name2) >=0 or author_name2.find(author_name1) >= 0:
+                            if abs(len(author_name1) - len(author_name2)) <= 3 and len(author_name1) >= 8 and len(author_name2) >= 8 or\
+                                    len(author_name1) > 15 and len(author_name2) > 15:
+                                name_instance2 = name_instance_dict[author_name2]
+                                for id in name_instance1.author_ids:
+                                    name_instance2.add_similar_author_id(id)
+                                for id in name_instance2.author_ids:
+                                    name_instance1.add_similar_author_id(id)
                         # print author_name2 + ' ' + author_name1
 
     # hash_dict = {}

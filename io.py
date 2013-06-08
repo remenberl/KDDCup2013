@@ -7,7 +7,7 @@ from scipy.sparse import lil_matrix, dok_matrix, spdiags
 from difflib import SequenceMatcher
 from name import *
 from custom_setting import *
-
+import re
 
 class Metapaths(object):
     """docstring for ClassName"""
@@ -37,17 +37,25 @@ def load_name_statistic():
     if not os.path.exists(directory):
         os.makedirs(directory)
     if os.path.isfile(serialization_dir + name_statistics_file) and \
-            os.path.isfile(serialization_dir + 'super_' + name_statistics_file):
+            os.path.isfile(serialization_dir + 'super_' + name_statistics_file) and \
+            os.path.isfile(serialization_dir + 'raw_' + name_statistics_file) and \
+            os.path.isfile(serialization_dir + 'complete_' + author_paper_stat_file):
         print "\tSerialization files related to name_statistics exist."
         print "\tReading in the serialization files.\n"
         name_statistics = cPickle.load(
             open(serialization_dir + name_statistics_file, "rb"))
         name_statistics_super = cPickle.load(
             open(serialization_dir + 'super_' + name_statistics_file, "rb"))
+        raw_name_statistics = cPickle.load(
+            open(serialization_dir + 'raw_' + name_statistics_file, "rb"))
+        author_paper_stat = cPickle.load(
+            open(serialization_dir + 'complete_' + author_paper_stat_file, "rb"))
     else:
         print "\tSerialization files related to name_statistics do not exist."
         name_statistics = dict()
+        raw_name_statistics = dict()
         name_statistics_super = dict()
+        author_paper_stat = dict()
         print "\tReading in the author.csv file."
         with open(author_file, 'rb') as csv_file:
             author_reader = csv.reader(csv_file, delimiter=',', quotechar='"')
@@ -60,7 +68,12 @@ def load_name_statistic():
                     print "\tFinish analysing " \
                         + str(count) + " lines of the file."
                 author_name = row[1].lower().strip()
-                elements = author_name.split(' ')
+                elements = author_name.split()
+                for element in elements:
+                    if element != '':
+                        raw_name_statistics[element] = raw_name_statistics.setdefault(element, 0) + 1
+                author_name = re.sub('[^a-zA-Z ]', '', author_name)
+                elements = author_name.split()
                 for element in elements:
                     if element != '':
                         name_statistics[element] = name_statistics.setdefault(element, 0) + 1
@@ -69,7 +82,9 @@ def load_name_statistic():
                     for element2 in elements:
                         if element1 != element2:
                             name_statistics[element1 + ' ' + element2] = name_statistics.setdefault(element1 + ' ' + element2, 0) + 1
+                            # name_statistics[element2 + ' ' + element1] = name_statistics.setdefault(element2 + ' ' + element1, 0) + 1
                             name_statistics_super[element1 + ' ' + element2] = name_statistics_super.setdefault(element1 + ' ' + element2, 0) + 1
+                            # name_statistics_super[element2 + ' ' + element1] = name_statistics_super.setdefault(element2 + ' ' + element1, 0) + 1
         print "\tReading in the paperauthor.csv file."
         with open(paper_author_file, 'rb') as csv_file:
             paper_author_reader = csv.reader(
@@ -83,7 +98,11 @@ def load_name_statistic():
                     print "\tFinish analysing " \
                         + str(count) + " lines of the file."
                 author_name = row[2].lower().strip()
-                elements = author_name.split(' ')
+                author_name = re.sub('[^a-zA-Z ]', '', author_name)
+                author_id = int(row[1])
+                paper_id = int(row[0])
+                author_paper_stat[author_id] = author_paper_stat.setdefault(author_id, 0) + 1
+                elements = author_name.split()
                 for element in elements:
                     if element != '':
                         name_statistics_super[element] = name_statistics.setdefault(element, 0) + 1
@@ -91,17 +110,24 @@ def load_name_statistic():
                     for element2 in elements:
                         if element1 != element2:
                             name_statistics_super[element1 + ' ' + element2] = name_statistics_super.setdefault(element1 + ' ' + element2, 0) + 1
+                            # name_statistics_super[element2 + ' ' + element1] = name_statistics_super.setdefault(element2 + ' ' + element1, 0) + 1
         print "\tWriting into serialization files related to name_statistics.\n"
         cPickle.dump(
             name_statistics,
             open(serialization_dir + name_statistics_file, "wb"), 2)
         cPickle.dump(
+            raw_name_statistics,
+            open(serialization_dir + 'raw_' + name_statistics_file, "wb"), 2)
+        cPickle.dump(
             name_statistics_super,
             open(serialization_dir + 'super_' + name_statistics_file, "wb"), 2)
-    return (name_statistics, name_statistics_super)
+        cPickle.dump(
+            author_paper_stat,
+            open(serialization_dir + 'complete_' + author_paper_stat_file, "wb"), 2)
+    return (name_statistics, raw_name_statistics, name_statistics_super, author_paper_stat)
   
  
-def load_author_files(name_statistics,  name_statistics_super):
+def load_author_files(name_statistics,  raw_name_statistics, name_statistics_super, author_paper_stat):
     directory = os.path.dirname(serialization_dir)
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -139,16 +165,16 @@ def load_author_files(name_statistics,  name_statistics_super):
                 else:
                     new_elements = list()
                     for element in elements:
-                        if element.lower() in name_statistics:
+                        if element.lower() in raw_name_statistics:
                             if len(element) <= 3 and element != elements[-1]:
-                                if name_statistics[element.lower()] <= 3: 
+                                if raw_name_statistics[element.lower()] <= 3: 
                                     new_elements.append(re.sub(r"(?<=\w)([A-Z])", r" \1", element))
-                                elif element.lower() not in asian_units and element.lower() not in asian_last_names and name_statistics[element.lower()] <= 10:
+                                elif element.lower() not in asian_units and element.lower() not in asian_last_names and raw_name_statistics[element.lower()] <= 10:
                                     new_elements.append(re.sub(r"(?<=\w)([A-Z])", r" \1", element))
                                 else:
                                     new_elements.append(element)
-                            elif len(element) > 3 and name_statistics[element.lower()] <= 1:
-                                if element.lower()[:-1] not in name_statistics or name_statistics[element.lower()[:-1]] <= 1:
+                            elif len(element) > 3 and raw_name_statistics[element.lower()] <= 1:
+                                if element.lower()[:-1] not in raw_name_statistics or raw_name_statistics[element.lower()[:-1]] <= 1:
                                     new_elements.append(re.sub(r"(?<=\w)([A-Z])", r" \1", element))
                                 else:
                                     new_elements.append(element)
@@ -176,12 +202,12 @@ def load_author_files(name_statistics,  name_statistics_super):
                     print "\tFinish analysing " \
                         + str(count) + " lines of the file."
                 author_id = int(row[0])
-                author_name = row[1]
+                author_name = row[1].strip()
                 if author_name == '':
                     continue
                 elements = author_name.split()
                 new_elements = list()
-                if len(elements[0]) > 1 and len(elements[0]) <= 5 and name_statistics[elements[0].lower()] <= 20:
+                if len(elements[0]) > 1 and len(elements[0]) <= 5 and raw_name_statistics[elements[0].lower()] <= 20:
                     new_elements.append(re.sub(r"(?<=\w)([a-zA-Z])", r" \1", elements[0]))
                     for element in elements[1:]:
                         new_elements.append(element)
@@ -197,28 +223,112 @@ def load_author_files(name_statistics,  name_statistics_super):
                             name_instance_dict[author.name] = author
         
         with open('log.txt', 'wb') as log_file:
-            for name_instance in list(name_instance_dict.itervalues()):
+            for name in list(name_instance_dict.iterkeys()):
+                if name not in name_instance_dict:
+                    continue
+                name_instance = name_instance_dict[name]
                 count += 1
                 if count % 20000 == 0:
                         print "\tFinish analysing " \
                             + str(count) + " lines of the file for removing noisy last names."
-                if len(name_instance.author_ids) == 1 and not name_instance.is_asian:
+                if len(name_instance.author_ids) == 1 and not name_instance.is_asian and not name_instance.has_dash:
                     elements = name_instance.name.split()
                     if len(elements) >= 2:
-                        if (elements[-2] + ' ' + elements[-1]) in name_statistics_super and name_statistics_super[(elements[-2] + ' ' + elements[-1])] >= 3:
+                        # if (elements[-2] + ' ' + elements[-1]) in name_statistics_super:
+                        #     paper_num = 0
+                        #     for id in name_instance.author_ids:
+                        #         if id in author_paper_stat:
+                        #             paper_num += author_paper_stat[id]
+                        #     if paper_num != 0:
+                        #         if name_statistics_super[(elements[-2] + ' ' + elements[-1])] / (paper_num + 0.0) > 0.2 or \
+                        #                 name_statistics_super[(elements[-2] + ' ' + elements[-1])] >= 5:
+                        #             continue
+                        #     else:
+                        #         continue
+                        if (elements[-2] + ' ' + elements[-1]) in name_statistics_super and name_statistics_super[(elements[-2] + ' ' + elements[-1])] >= 2:
                             continue
-                    name = name_instance.name
-                    i = len(name) / 2
-                    for j in xrange(i):
-                        if name[:-j] in name_instance_dict:
-                            if len(name[:-j]) < 9 or len(name[:-j].split()[-1]) == 1:
-                                continue
-                            for id in name_instance.author_ids:
-                                name_instance_dict[name[:-j]].add_author_id(id)
-                                id_name_dict[id][0] = name[:-j]
-                            del name_instance_dict[name]
-                            log_file.write("\t\t" + name + ' --> ' + name[:-j] + '\n')
+                    i = len(name) / 3
+                    flag = False
+                    for j in range(1, i):
+                        elements = name[:-j].split()
+                        if len(elements) < 2:
                             break
+                        if len(elements) <= 4:
+                            pool = itertools.permutations(elements)
+                        else:
+                            pool = [elements]
+                        for permutation in pool:
+                            candi = ' '.join(permutation)
+                            if candi in name_instance_dict:
+                                if len(candi) <= 10 or len(name[:-j].split()[-1]) == 1:
+                                    continue
+                                if len(name_instance_dict[candi].author_ids) > len(name_instance.author_ids):
+                                    for id in name_instance.author_ids:
+                                        name_instance_dict[candi].add_author_id(id)
+                                        id_name_dict[id][0] = candi
+                                    alternatives = name_instance_dict[name].get_alternatives()
+                                    for alternative in alternatives:
+                                        name_instance_dict[candi].add_alternative(alternative)
+                                    del name_instance_dict[name]
+                                    log_file.write("\t\t" + name + ' --> ' + candi + '\n')
+                                elif len(name_instance_dict[candi].author_ids) < len(name_instance.author_ids):
+                                    for id in name_instance_dict[candi].author_ids:
+                                        name_instance.add_author_id(id)
+                                        id_name_dict[id][0] = name_instance.name
+                                    alternatives = name_instance_dict[candi].get_alternatives()
+                                    for alternative in alternatives:
+                                        name_instance_dict[name].add_alternative(alternative)
+                                    del name_instance_dict[candi]
+                                    log_file.write("\t\t" + candi + ' --> ' + name + '\n')
+                                else:
+                                    score_A = 0
+                                    elements = name.split()
+                                    for k in xrange(len(elements) - 1):
+                                        if (elements[k] + ' ' + elements[k + 1]) in name_statistics:
+                                            score_A += name_statistics[elements[k] + ' ' + elements[k + 1]]
+                                    if len(elements) == 1:
+                                        score_A = 0
+                                    else:
+                                        score_A /= len(elements) - 1.0
+                                    score_B = 0
+                                    elements = candi.split()
+                                    for k in xrange(len(elements) - 1):
+                                        if (elements[k] + ' ' + elements[k + 1]) in name_statistics:
+                                            score_B += name_statistics[elements[k] + ' ' + elements[k + 1]]
+                                    if len(elements) == 1:
+                                        score_B = 0
+                                    else:
+                                        score_B /= len(elements) - 1.0
+                                    if score_A == score_B:
+                                        score_A = 0
+                                        score_B = 0
+                                        if name_instance.last_name in name_statistics:
+                                            score_A = name_statistics[name_instance.last_name]
+                                        if name_instance_dict[candi].last_name in name_statistics:
+                                            score_B = name_statistics[name_instance_dict[candi].last_name]
+                                    if score_A <= score_B:
+                                        for id in name_instance.author_ids:
+                                            name_instance_dict[candi].add_author_id(id)
+                                            id_name_dict[id][0] = candi
+                                        alternatives = name_instance_dict[name].get_alternatives()
+                                        for alternative in alternatives:
+                                            name_instance_dict[candi].add_alternative(alternative)
+                                        del name_instance_dict[name]
+                                        log_file.write("\t\t" + str(score_A) + name + ' --> ' + str(score_B) + candi + '\n')
+                                    else:
+                                        for id in name_instance_dict[candi].author_ids:
+                                            name_instance.add_author_id(id)
+                                            id_name_dict[id][0] = name_instance.name
+                                        alternatives = name_instance_dict[candi].get_alternatives()
+                                        for alternative in alternatives:
+                                            name_instance_dict[name].add_alternative(alternative)
+                                        del name_instance_dict[candi]
+                                        log_file.write("\t\t" + str(score_B) + candi + ' --> ' + str(score_A) + name + '\n')
+                                flag = True
+                                break
+                        if flag == True:
+                            break
+                        
                         
         for name_instance in list(name_instance_dict.itervalues()):
             count += 1
@@ -266,6 +376,7 @@ def load_author_files(name_statistics,  name_statistics_super):
                     for element2 in elements:
                         if element1 != element2:
                             name_statistics[element1 + ' ' + element2] = name_statistics.setdefault(element1 + ' ' + element2, 0) + len(name_instance.author_ids)
+                            # name_statistics[element2 + ' ' + element1] = name_statistics.setdefault(element2 + ' ' + element1, 0) + len(name_instance.author_ids)
 
         print "\tWriting into serialization files related to name_statistics.\n"
         cPickle.dump(
@@ -282,14 +393,13 @@ def load_author_files(name_statistics,  name_statistics_super):
     return (name_instance_dict, id_name_dict, name_statistics)
 
 
-def load_coauthor_files(name_instance_dict, id_name_dict):
+def load_coauthor_files(name_instance_dict, id_name_dict, author_paper_stat):
     if os.path.isfile(serialization_dir + coauthor_matrix_file) and \
             os.path.isfile(serialization_dir  + '2hop_' + coauthor_matrix_file) and \
             os.path.isfile(serialization_dir + author_paper_matrix_file) and \
             os.path.isfile(serialization_dir + 'all_' + author_paper_matrix_file) and \
             os.path.isfile(serialization_dir + 'complete_' + name_instance_file) and \
-            os.path.isfile(serialization_dir + 'complete_' + id_name_file) and \
-            os.path.isfile(serialization_dir + 'complete_' + author_paper_stat_file) :
+            os.path.isfile(serialization_dir + 'complete_' + id_name_file):
         print "\tSerialization files related to coauthors exist."
         print "\tReading in the serialization files.\n"
         coauthor_matrix = cPickle.load(
@@ -304,14 +414,11 @@ def load_coauthor_files(name_instance_dict, id_name_dict):
             open(serialization_dir + 'complete_' + name_instance_file, "rb"))
         id_name_dict = cPickle.load(
             open(serialization_dir + 'complete_' + id_name_file, "rb"))
-        author_paper_stat = cPickle.load(
-            open(serialization_dir + 'complete_' + author_paper_stat_file, "rb"))
     else:
         print "\tSerialization files related to coauthors do not exist."
         # The maximum id for author is 2293837 and for paper is 2259021
         all_author_paper_matrix = lil_matrix((max_author + 1, max_paper + 1))
         author_paper_matrix = lil_matrix((max_author + 1, max_paper + 1))
-        author_paper_stat = dict()
         print "\tReading in the paperauthor.csv file."
         with open(paper_author_file, 'rb') as csv_file:
             paper_author_reader = csv.reader(
@@ -326,10 +433,6 @@ def load_coauthor_files(name_instance_dict, id_name_dict):
                         + str(count) + " lines of the file."
                 paper_id = int(row[0])
                 author_id = int(row[1])
-                if author_id in author_paper_stat:
-                    author_paper_stat[author_id] += 1
-                else:
-                    author_paper_stat[author_id] = 1
                 all_author_paper_matrix[author_id, paper_id] = 1
                 if author_id in id_name_dict:
                     author = Name(row[2], True)
@@ -369,13 +472,9 @@ def load_coauthor_files(name_instance_dict, id_name_dict):
         cPickle.dump(
             id_name_dict,
             open(serialization_dir + 'complete_' + id_name_file, "wb"), 2)
-        cPickle.dump(
-            author_paper_stat,
-            open(serialization_dir + 'complete_' + author_paper_stat_file, "wb"), 2)
-     
     # coauthor_3hop_matrix = coauthor_2hop_matrix * coauthor_matrix.transpose()
 
-    return (author_paper_matrix, all_author_paper_matrix, coauthor_matrix, coauthor_2hop_matrix, name_instance_dict, id_name_dict, author_paper_stat)
+    return (author_paper_matrix, all_author_paper_matrix, coauthor_matrix, coauthor_2hop_matrix, name_instance_dict, id_name_dict)
 
 
 def load_covenue_files(id_name_dict, author_paper_matrix, all_author_paper_matrix):
@@ -851,9 +950,9 @@ def load_files():
             A sparse matrix with row: author_id and column: author_id.
             It is obtained by joining author_venue_matrix with itself
     """
-    (name_statistics, name_statistics_super) = load_name_statistic()
-    (name_instance_dict, id_name_dict, name_statistics) = load_author_files(name_statistics, name_statistics_super)
-    (author_paper_matrix, all_author_paper_matrix, coauthor_matrix, coauthor_2hop_matrix, name_instance_dict, id_name_dict, author_paper_stat) = load_coauthor_files(name_instance_dict, id_name_dict)
+    (name_statistics, raw_name_statistics, name_statistics_super, author_paper_stat) = load_name_statistic()
+    (name_instance_dict, id_name_dict, name_statistics) = load_author_files(name_statistics, raw_name_statistics, name_statistics_super, author_paper_stat)
+    (author_paper_matrix, all_author_paper_matrix, coauthor_matrix, coauthor_2hop_matrix, name_instance_dict, id_name_dict) = load_coauthor_files(name_instance_dict, id_name_dict, author_paper_stat)
     (covenue_matrix, author_venue_matrix) = load_covenue_files(id_name_dict, author_paper_matrix, all_author_paper_matrix)
     author_word_matrix = load_author_word_files(id_name_dict, author_paper_matrix)
     (author_key_word_matrix, co_key_word_matrix_file) = load_author_keyword_files(author_paper_matrix, all_author_paper_matrix)

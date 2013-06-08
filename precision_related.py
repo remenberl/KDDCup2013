@@ -238,13 +238,33 @@ def name_comparable(name_instance_A, name_instance_B, name_statistics, strict_mo
     
 
 def name_group_comparable(group, name_instance_dict, id_name_dict, name_statistics):
+    disobey = 0
     for author_A in group:
         for author_B in group:
-            if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]], name_statistics, False):
-                # print "\t\tConflicted name group: " + id_name_dict[author_A][0] + '\tv.s.\t' + id_name_dict[author_B][0]
-                return False
+            if author_A < author_B:
+                if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]], name_statistics, False):
+                    # print "\t\tConflicted name group: " + id_name_dict[author_A][0] + '\tv.s.\t' + id_name_dict[author_B][0]
+                    return False
     return True
 
+def name_group_comparable_with_tolerence(group, group1, group2, name_instance_dict, id_name_dict, name_statistics):
+    total = len(group1) * len(group2) + 0.0
+    disobey = 0
+    for author_A in group1:
+        for author_B in group2:
+            if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]], name_statistics, False):
+                    # print "\t\tConflicted name group: " + id_name_dict[author_A][0] + '\tv.s.\t' + id_name_dict[author_B][0]
+                disobey += 1
+    if min(len(group1), len(group2)) >= 4:
+        if disobey <= total * 0.2 or disobey <= min(len(group1), len(group2)) * 2:
+            return True
+        else:
+            return False
+    else:
+        if disobey <= min(len(group1), len(group2)) / 2:
+            return True
+        else:
+            return False
 
 def compute_similarity_score(author_A, author_B, metapaths):
     if author_A not in normalized_feature_dict:
@@ -348,8 +368,8 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
     normalized_feature_dict = {}
     similarity_dict = {}
     for potential_duplicate_group in potential_duplicate_groups:  
-        if count % 30000 == 0:
-            print "\tFinish analysing " \
+        if count % 10000 == 0:
+            print "\tFinish computing similarities for " \
                 + str(float(count)/len(potential_duplicate_groups)*100) \
                 + "% (" + str(count) + "/" + str(len(potential_duplicate_groups)) \
                 + ") possible duplicate groups."
@@ -360,9 +380,27 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
         author_B = potential_duplicate_group[1]
         name_A = id_name_dict[author_A][0]
         name_B = id_name_dict[author_B][0]
-
-        if author_A not in author_paper_stat or author_B not in author_paper_stat:
+        if not name_comparable(name_instance_dict[name_A], name_instance_dict[name_B], name_statistics):
             continue
+        similarity = compute_similarity_score(author_A, author_B, metapaths)
+        similarity_dict[potential_duplicate_group] = max(similarity)
+        statistic[similarity.index(max(similarity))] += 1
+
+    sorted_potential_duplicate_groups = sorted(similarity_dict.keys(), key=lambda x: -similarity_dict[x])
+    for potential_duplicate_group in sorted_potential_duplicate_groups:
+        if count % 10000 == 0:
+            print "\tFinish merging " \
+                + str(float(count)/len(potential_duplicate_groups)*100) \
+                + "% (" + str(count) + "/" + str(len(potential_duplicate_groups)) \
+                + ") possible duplicate groups."
+            print "\tStatistic about merges based on different features: " + str(statistic)
+        count += 1
+
+        author_A = potential_duplicate_group[0]
+        author_B = potential_duplicate_group[1]
+
+        name_A = id_name_dict[author_A][0]
+        name_B = id_name_dict[author_B][0]
 
         if name_A == '' or name_B == '':
             continue
@@ -372,13 +410,18 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
             print "\t\t" + id_name_dict[author_B][0] + str(author_B)
             continue
 
-        if not name_comparable(name_instance_dict[name_A], name_instance_dict[name_B], name_statistics):
-            continue
+        # if not name_comparable(name_instance_dict[name_A], name_instance_dict[name_B], name_statistics):
+        #     continue
 
+        name_instance_A = name_instance_dict[id_name_dict[author_A][0]]
+        name_instance_B = name_instance_dict[id_name_dict[author_A][0]]
         if name_A != name_B:
             if len(name_A) <= 10 or len(name_B) <= 10:
                 pass
-            elif name_B.replace(' ', '').find(name_A.replace(' ', '')) >= 0 or name_A.replace(' ', '').find(name_B.replace(' ', '')) >= 0 or name_A.replace(' ', '') == name_B.replace(' ', ''):
+            elif name_B.replace(' ', '').find(name_A.replace(' ', '')) >= 0 \
+                    or name_A.replace(' ', '').find(name_B.replace(' ', '')) >= 0 \
+                    or name_A.replace(' ', '') == name_B.replace(' ', '') \
+                    or my_string_match_score(name_A, name_B, name_statistics, name_instance_A.is_asian or name_instance_B.is_asian) >= 10:
                 if len(name_instance_dict[name_A].author_ids) > len(name_instance_dict[name_B].author_ids):
                     print "\t\tMerge two name instances: " + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids)) + \
                             '   <--   ' + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids))
@@ -426,26 +469,23 @@ def local_clustering(potential_duplicate_groups, author_paper_stat, name_instanc
                     merge_name_instances(name_instance_dict, id_name_dict, author_B, author_A) 
                     
 
-                
+        # similarity = compute_similarity_score(author_A, author_B, metapaths)
+        # if max(similarity) >= merge_threshold:
+        #     if max(similarity) == merge_threshold:
+        #         name_A = name_A
+        #         name_B = name_B
+        #         if name_A == '' or name_B == '':
+        #             continue
+        #         # if SequenceMatcher(None, name_instance_dict[name_A].last_name, name_instance_dict[name_B].last_name).ratio() > 0.6:
+        #         #     if name_A.last_name != name_B.last_name and \
+        #         #             name_A.last_name[:-1] != name_B.last_name and \
+        #         #             name_A.last_name != name_B.last_name[:-1] and \
+        #         #             name_A.last_name[:-1] != name_B.last_name[:-1]:
+        #         #         continue
 
-        similarity = compute_similarity_score(author_A, author_B, metapaths)
-        if max(similarity) >= merge_threshold:
-            if max(similarity) == merge_threshold:
-                name_A = name_A
-                name_B = name_B
-                if name_A == '' or name_B == '':
-                    continue
-                # if SequenceMatcher(None, name_instance_dict[name_A].last_name, name_instance_dict[name_B].last_name).ratio() > 0.6:
-                #     if name_A.last_name != name_B.last_name and \
-                #             name_A.last_name[:-1] != name_B.last_name and \
-                #             name_A.last_name != name_B.last_name[:-1] and \
-                #             name_A.last_name[:-1] != name_B.last_name[:-1]:
-                #         continue
-
-            real_duplicate_groups.add(potential_duplicate_group)
-            statistic[similarity.index(max(similarity))] += 1
-
-        similarity_dict[potential_duplicate_group] = max(similarity)
+        real_duplicate_groups.add(potential_duplicate_group)
+        
+        # similarity_dict[potential_duplicate_group] = max(similarity)
 
     return (real_duplicate_groups, similarity_dict)
 
@@ -527,21 +567,22 @@ def find_closure(authors_duplicates_dict):
         authors_duplicates_dict[author_id].remove(author_id)
 
 
-def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_dict, metapaths):
+def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_dict, metapaths, remove_flag):
     for author_id in authors_duplicates_dict.iterkeys():
         if author_id in authors_duplicates_dict[author_id]:
             authors_duplicates_dict[author_id].remove(author_id)
 
-    count = 0
-    for author_id in authors_duplicates_dict.iterkeys():
-        for duplicate_author_id in set(authors_duplicates_dict[author_id]):
-            if not name_comparable(name_instance_dict[id_name_dict[author_id][0]], \
-                    name_instance_dict[id_name_dict[duplicate_author_id][0]], name_statistics, False):
-                authors_duplicates_dict[author_id].remove(duplicate_author_id)
-                if author_id in authors_duplicates_dict[duplicate_author_id]:
-                    authors_duplicates_dict[duplicate_author_id].remove(author_id)
-                count += 1
-    print "\tRemoving " + str(count) + " author_ids from name comparison."
+    if remove_flag:
+        count = 0
+        for author_id in authors_duplicates_dict.iterkeys():
+            for duplicate_author_id in set(authors_duplicates_dict[author_id]):
+                if not name_comparable(name_instance_dict[id_name_dict[author_id][0]], \
+                        name_instance_dict[id_name_dict[duplicate_author_id][0]], name_statistics, False):
+                    authors_duplicates_dict[author_id].remove(duplicate_author_id)
+                    if author_id in authors_duplicates_dict[duplicate_author_id]:
+                        authors_duplicates_dict[duplicate_author_id].remove(author_id)
+                    count += 1
+        print "\tRemoving " + str(count) + " author_ids from name comparison."
 
     conflict_ids = find_conflict_name(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics)
     print "\tFinding who are really duplicates among the conflict author_ids"
@@ -569,6 +610,7 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, nam
     print "\tSorting conflicted author pairs according to similarity scores."
     sorted_author_pairs = sorted(subset_similarity_dict.keys(), key=lambda candi: -subset_similarity_dict[candi])
 
+    bad_pairs = list()
     for author_pair in sorted_author_pairs:
         author1 = author_pair[0]
         author2 = author_pair[1]
@@ -582,6 +624,36 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, nam
             continue
         new_group = set(group1 + group2)
         if not name_group_comparable(new_group, name_instance_dict, id_name_dict, name_statistics):
+            bad_pairs.append(author_pair)
+            continue
+        else:
+            new_group = tuple(sorted(new_group))
+        if group1 in new_group_set:
+            new_group_set.remove(group1)
+        if group2 in new_group_set:
+            new_group_set.remove(group2)
+        new_group_set.add(new_group)
+
+    count = 0
+    for author_pair in bad_pairs:
+        count += 1
+        if count % 1000 == 0:
+            print "\tFinish merging " \
+                    + str(float(count)/len(bad_pairs)*100) \
+                    + "% (" + str(count) + "/" + str(len(bad_pairs)) \
+                    + ") conflict groups with tolerance."
+        author1 = author_pair[0]
+        author2 = author_pair[1]
+        group1 = tuple()
+        for group in new_group_set:
+            if author1 in group:
+                group1 = group
+            if author2 in group:
+                group2 = group
+        if group1 == group2:
+            continue
+        new_group = set(group1 + group2)
+        if not name_group_comparable_with_tolerence(new_group, group1, group2, name_instance_dict, id_name_dict, name_statistics):
             continue
         else:
             new_group = tuple(sorted(new_group))
