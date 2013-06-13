@@ -1,19 +1,25 @@
-Before running the algorithm, please ensure the Python 2 version is greater than 2.7.
+KDDCup2013 Track 2 by SmallData
+=================================
+
+*Before running the algorithm, please ensure the Python 2 version is greater than 2.7.*
 
 Computer configuration suggested:
+-------------------------------
 
     All the code except model 0 has been tested on a PC with 16GB memory with Ubuntu 13.04.
     To run model 0, a 32GB memory machine is needed.
 
 Package required: 
+-------------------------------
 
-    sklearn: Mainly used for normalizing vectors. Can be installed following http://scikit-learn.org/stable/install.html
+    [sklearn](http://scikit-learn.org/stable/install.html): Mainly used for normalizing vectors.
 
-    scipy: Mainly used for supporting sparse matrix
+    scipy: Mainly used for supporting sparse matrix.
 
     fuzzy: Mainly used for computing distance based on sound of the strings.
 
 Files:
+---------------------------------
     main.py keeps the entrance of the whole program.
 
     custome_setting.py keeps all the settings of files and parameters.
@@ -37,6 +43,7 @@ Files:
     cannot_links.py keeps pairs of author ids that are not possible to be duplicates.
 
 Folders:
+------------------------------------
     data/ keeps all csv files
 
     serialize/ keeps all intermediate files (run once)
@@ -46,12 +53,13 @@ Folders:
     model0/ keeps codes for generating confident author duplicates on all the author ids appeared in both Author.csv and PaperAuthor.csv. The generated result is used for building better coauthor, covenue matrices for the main algorithm.
 
 How to run:
-    1. Install the necessary packages mentioned in the first paragraph.
+-------------------------------------
+1. Install the necessary packages mentioned at beginning.
 
-    2. Copy data set into the data/ folder.
+2. Copy data set into the data/ folder.
 
-    3. Run simple_convert.py to generate cleaned Author.csv and PaperAuthor.csv files.
+3. Run simple_convert.py to generate cleaned Author.csv and PaperAuthor.csv files.
 
-    4. Run model/main.py twice to generate confident duplicate authors in the whole dataset
+4. Run model/main.py twice to generate confident duplicate authors in the whole dataset
 
-    5. Run main.py to generate submission file under result/
+5. Run main.py to generate submission file under result/
