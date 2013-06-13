@@ -1,12 +1,13 @@
 #-*- coding: UTF-8 -*-
-
 author_file = "./data/Author_refined_simple.csv"
 paper_author_file = "./data/PaperAuthor_refined_simple.csv"
 paper_file = './data/sanitizedPaper.csv'
 stopword_file = './data/Stopword.csv'
+confident_duplicate_authors_file = './data/complete_duplicate_authors_2.csv'
 
 duplicate_authors_file = "./result/duplicate_authors.csv"
 duplicate_authors_full_name_file = "./result/duplicate_authors_fullname.csv"
+duplicate_authors_unconfident_subset_file = "./result/duplicate_authors_unconfident_subset.csv"
 
 
 merge_threshold = 0.00000000001
@@ -29,7 +30,9 @@ name_statistics_file = "name_statistics.seal" + '.' + version
 author_paper_stat_file = "author_paper_stat.seal" + '.' + version
 potential_duplicate_groups_file = "potential_duplicate_groups.seal" + '.' + version
 real_duplicate_groups_file = "real_duplicate_groups.seal" + '.' + version
+analyzed_duplicate_groups_file = "analyzed_duplicate_groups.seal" + '.' + version
 similarity_score_dict_file = "similarity_score.seal" + '.' + version
+cannot_links_file = "cannot_links.seal" + '.' + version
 
 max_conference = 5222
 max_journal = 22228

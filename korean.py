@@ -11,4 +11,4 @@ korean_last_names = set(['kim', 'kym', 'ghim', 'khim', 'gym', 'lee', 'yi', 'rhee
 	'yang', 'rang', 'laang', 'ko', 'koh', 'goh', 'kho', 'gho', 'kor', 'moon', \
 	'sohn', 'shon', 'soon', 'soun', 'sun', 'suonbai', 'bea', 'pae', 'pai', \
 	'baik', 'back', 'paik', 'paek', 'beak', 'baek', 'pak', 'bak', 'pack', 'chin', 'jean', 'gin', 'zhin', 'chen', \
-	'bae',  'seo', 'hong', 'yen', 'yeh'])
+	'bae',  'seo', 'hong', 'yen', 'yeh', 'sham'])

@@ -2,6 +2,7 @@
 from difflib import SequenceMatcher
 from name import *
 from simhash import *
+from precision_related import *
 
 def add_similar_ids_under_name(name_instance_dict, id_name_dict):
     """Find similar id for each name in name_instance_dict.
@@ -27,7 +28,7 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
     print "\tAdding similar author ids into each name instance."
     for (author_name, name_instance) in name_instance_dict.iteritems():
         if author_name not in virtual_name_set:
-            alternatives = name_instance.get_alternatives()
+            alternatives = name_instance.alternatives
             for alternative in alternatives:
                 # Add author_ids into the similar_author_ids
                 # of the name's alternative.
@@ -65,12 +66,11 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
             reduced_name = ''.join(elements)
             pool = reduced_name_pool[reduced_name]
             for author_name2 in pool:
-                if author_name1 < author_name2: 
-                    name_instance2 = name_instance_dict[author_name2]
-                    for id in name_instance1.author_ids:
-                        name_instance2.add_similar_author_id(id)
-                    for id in name_instance2.author_ids:
-                        name_instance1.add_similar_author_id(id)             
+                name_instance2 = name_instance_dict[author_name2]
+                for id in name_instance1.author_ids:
+                    name_instance2.add_similar_author_id(id)
+                for id in name_instance2.author_ids:
+                    name_instance1.add_similar_author_id(id)             
 
     sorted_name_pool = {}
     length = len(name_instance_dict) - len(virtual_name_set)
@@ -122,6 +122,10 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
             for element in elements:
                 name_unit_pool.setdefault(element, set()).add(author_name)
     
+    name_finger_dict = {}
+    for (author_name, name_instance) in name_instance_dict.iteritems():
+        name_finger_dict[author_name] = ''.join(sorted(author_name.split()))
+
     print "\tAdding similar ids for the same name units."
     count = 0
     for (author_name1, name_instance1) in name_instance_dict.iteritems():
@@ -136,7 +140,7 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
             for element in elements:
                 pool = name_unit_pool[element]
                 for author_name2 in pool:
-                    if author_name1 < author_name2: 
+                    if author_name1 < author_name2:
                         if author_name1.find(author_name2) >=0 or author_name2.find(author_name1) >= 0:
                             if abs(len(author_name1) - len(author_name2)) <= 3 and len(author_name1) >= 8 and len(author_name2) >= 8 or\
                                     len(author_name1) > 15 and len(author_name2) > 15:

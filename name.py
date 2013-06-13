@@ -105,6 +105,8 @@ class Name:
             self.has_dash = False
 
         name = name.replace(',', ' ')
+        # if name.rfind('-') > name.rfind(' '):
+        #     name.rfind('-') = ''
         if is_asian_name(name.strip().lower().split(' ')[-1]) or is_asian_name(name.strip().lower().split(' ')[0]):
             self.is_asian = True
             self.__name_process(name.replace('.', ' ').replace('-', ''), 1)
@@ -120,7 +122,7 @@ class Name:
             self.similar_author_ids = set()
             self.add_alternative(self.__name_process(name.replace('.', '').replace('-', ''), 2))
             self.add_alternative(self.__name_process(name.replace('.', '').replace('-', ' '), 2))
-            self.add_alternative(self.__name_process(name.replace('.', '').replace('-', ' '), 2))
+            self.add_alternative(self.__name_process(name.replace('.', ' ').replace('-', ''), 2))
             self.add_alternative(self.__name_process(name.replace('.', ' ').replace('-', ' '), 2))
             self.initials = self.get_initials()
             self.bad_name_flag = False
@@ -313,6 +315,12 @@ class Name:
         self.alternatives.add(self.name.strip())
         if len(self.first_name) == 0 and len(self.middle_name) == 0 and len(self.last_name) == 0:
             return self.alternatives
+        pool = [self.first_name, self.middle_name, self.last_name]
+        for alternative in set(self.alternatives):
+            elements = alternative.split()
+            if len(elements) >= 4:
+                pool = [elements[0], ' '.join(elements[1:-1]), elements[-1]]
+                self.alternatives = self.alternatives.union(self.__genearte_possible_names(pool))
         pool = [self.first_name, self.middle_name, self.last_name]
         self.alternatives = self.alternatives.union(self.__genearte_possible_names(pool))
         # pool = [self.last_name, self.middle_name, self.first_name]

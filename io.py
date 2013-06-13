@@ -9,9 +9,11 @@ from name import *
 from custom_setting import *
 import re
 
+duplicate_author_dict = {}
+
 class Metapaths(object):
     """docstring for ClassName"""
-    def __init__(self, AP, APV, APW, APK, AO, AY, APA, APVPA, APKPA, APAPA, APAPV):
+    def __init__(self, AP, APV, APW, APK, AO, AY, APA, APVPA, APAPA, APAPV):
         #AP: author-paper
         #APV: author-venue
         #APA: author-paper-venue
@@ -27,7 +29,6 @@ class Metapaths(object):
         self.AY = AY
         self.APA = APA
         self.APVPA = APVPA
-        self.APKPA = APKPA
         self.APAPA = APAPA
         self.APAPV = APAPV
          
@@ -182,6 +183,9 @@ def load_author_files(name_statistics,  raw_name_statistics, name_statistics_sup
                                 new_elements.append(element)
                         else:
                             new_elements.append(element)
+                if len(new_elements) >= 3 and new_elements[-1].lower() == 'j':
+                    print new_elements
+                    new_elements = new_elements[:-1]
                 author = Name(' '.join(new_elements))
                 id_name_dict[author_id] = [author.name, row[1]]
                 if author.name in name_instance_dict:
@@ -272,7 +276,7 @@ def load_author_files(name_statistics,  raw_name_statistics, name_statistics_sup
                                     del name_instance_dict[name]
                                     log_file.write("\t\t" + name + ' --> ' + candi + '\n')
                                 elif len(name_instance_dict[candi].author_ids) < len(name_instance.author_ids):
-                                    for id in name_instance_dict[candi].author_ids:
+                                    for id in set(name_instance_dict[candi].author_ids):
                                         name_instance.add_author_id(id)
                                         id_name_dict[id][0] = name_instance.name
                                     alternatives = name_instance_dict[candi].get_alternatives()
@@ -415,6 +419,21 @@ def load_coauthor_files(name_instance_dict, id_name_dict, author_paper_stat):
         id_name_dict = cPickle.load(
             open(serialization_dir + 'complete_' + id_name_file, "rb"))
     else:
+        if os.path.isfile(confident_duplicate_authors_file):
+            print "\tReading from confident duplicate_author file."
+            with open(confident_duplicate_authors_file, 'rb') as csv_file:
+                duplicate_author_reader = csv.reader(
+                        csv_file, delimiter=',', quotechar='"')
+                next(duplicate_author_reader)
+                count = 0
+                for row in duplicate_author_reader:
+                    count += 1
+                    if count % 10000 == 0:
+                        print "\tFinish reading in  "  \
+                                + str(count) + " lines of the file."
+                    author_list = row[1].split()
+                    for author_id in author_list:
+                        duplicate_author_dict.setdefault(int(row[0]), set()).add(int(author_id))
         print "\tSerialization files related to coauthors do not exist."
         # The maximum id for author is 2293837 and for paper is 2259021
         all_author_paper_matrix = lil_matrix((max_author + 1, max_paper + 1))
@@ -434,6 +453,9 @@ def load_coauthor_files(name_instance_dict, id_name_dict, author_paper_stat):
                 paper_id = int(row[0])
                 author_id = int(row[1])
                 all_author_paper_matrix[author_id, paper_id] = 1
+                if author_id in duplicate_author_dict:
+                    for id in duplicate_author_dict[author_id]:
+                        all_author_paper_matrix[id, paper_id] = 1
                 if author_id in id_name_dict:
                     author = Name(row[2], True)
                     author_paper_matrix[author_id, paper_id] = 1
@@ -647,14 +669,14 @@ def load_author_word_files(id_name_dict, author_paper_matrix):
 
 
 def load_author_keyword_files(author_paper_matrix, all_author_paper_matrix):
-    if os.path.isfile(serialization_dir + author_key_word_matrix_file) and \
-            os.path.isfile(serialization_dir + co_key_word_matrix_file):
+    if os.path.isfile(serialization_dir + author_key_word_matrix_file): #and \
+            # os.path.isfile(serialization_dir + co_key_word_matrix_file):
         print "\tSerialization files related to author_keyword exist."
         print "\tReading in the serialization files.\n"
         author_key_word_matrix = cPickle.load(open(
             serialization_dir + author_key_word_matrix_file, "rb"))
-        co_key_word_matrix = cPickle.load(open(
-            serialization_dir + co_key_word_matrix_file, "rb"))
+        # co_key_word_matrix = cPickle.load(open(
+        #     serialization_dir + co_key_word_matrix_file, "rb"))
     else:
         print "\tSerialization files related to author_keyword do not exist."
         nAuthor = author_paper_matrix.shape[0]-1
@@ -712,7 +734,7 @@ def load_author_keyword_files(author_paper_matrix, all_author_paper_matrix):
         author_key_word_matrix = author_paper_matrix * paper_keyword_matrix 
         all_author_key_word_matrix = all_author_paper_matrix * paper_keyword_matrix
 
-        co_key_word_matrix = author_key_word_matrix * all_author_key_word_matrix.transpose()
+        # co_key_word_matrix = author_key_word_matrix * all_author_key_word_matrix.transpose()
         # print "\tComputing the co-key-word graph."
         # co_keyword_matrix = author_key_word_matrix * author_key_word_matrix.transpose()
         # co_keyword_matrix = co_keyword_matrix - spdiags(co_keyword_matrix.diagonal(), 0, nAuthor+1, nAuthor+1, 'csr')
@@ -727,10 +749,10 @@ def load_author_keyword_files(author_paper_matrix, all_author_paper_matrix):
         cPickle.dump(
             author_key_word_matrix,
             open(serialization_dir + author_key_word_matrix_file, "wb"), 2)
-        cPickle.dump(
-            co_key_word_matrix,
-            open(serialization_dir + co_key_word_matrix_file, "wb"), 2)      
-    return (author_key_word_matrix, co_key_word_matrix)
+        # cPickle.dump(
+        #     co_key_word_matrix,
+        #     open(serialization_dir + co_key_word_matrix_file, "wb"), 2)      
+    return author_key_word_matrix
 
 
 def load_author_affili_matrix_files():
@@ -785,6 +807,10 @@ def load_author_affili_matrix_files():
                 if cnt_line % 40000 == 0:
                     print "\tFinish analysing " + str(cnt_line) + " lines of the file."
                 author_id = int(row[0])
+                if author_id in duplicate_author_dict:
+                    duplicate_authors = duplicate_author_dict[author_id]
+                else:
+                    duplicate_authors = list()
                 author_affili = row[2].strip().lower()
                 if author_affili != '':
                     author_affilis = re.sub('[^a-zA-Z ]', ' ', author_affili)
@@ -796,10 +822,9 @@ def load_author_affili_matrix_files():
                             if word not in dict_affi: 
                                 dict_affi[word] = cnt_affi
                                 cnt_affi += 1
-                                if author_id not in dict_author_affi:
-                                    dict_author_affi[author_id] = [word]
-                                else:
-                                    dict_author_affi[author_id] += [word]
+                            dict_author_affi.setdefault(author_id, list()).append(word)
+                            for id in duplicate_authors:
+                                dict_author_affi.setdefault(id, list()).append(word)
         with open(paper_author_file, 'rb') as csv_file:
             paper_author_reader = csv.reader(csv_file, delimiter=',', quotechar='"') 
             next(paper_author_reader) 
@@ -808,6 +833,10 @@ def load_author_affili_matrix_files():
                 if cnt_line % 2000000 == 0:
                     print "\tFinish analysing " + str(cnt_line) + " lines of the file."
                 author_id = int(row[1])
+                if author_id in duplicate_author_dict:
+                    duplicate_authors = duplicate_author_dict[author_id]
+                else:
+                    duplicate_authors = list()
                 author_affili = row[3].strip().lower()
                 if author_affili != '':
                     author_affilis = re.sub('[^a-zA-Z ]', ' ', author_affili)
@@ -819,10 +848,9 @@ def load_author_affili_matrix_files():
                             if word not in dict_affi:
                                 dict_affi[word] = cnt_affi
                                 cnt_affi += 1
-                            if author_id not in dict_author_affi:
-                                dict_author_affi[author_id] = [word]
-                            else:
-                                dict_author_affi[author_id] += [word]
+                            dict_author_affi.setdefault(author_id, list()).append(word)
+                            for id in duplicate_authors:
+                                dict_author_affi.setdefault(id, list()).append(word)
         #nUniqueAffi is the number of unique affliations            
         nUniqueAffi = cnt_affi  
 
@@ -955,12 +983,12 @@ def load_files():
     (author_paper_matrix, all_author_paper_matrix, coauthor_matrix, coauthor_2hop_matrix, name_instance_dict, id_name_dict) = load_coauthor_files(name_instance_dict, id_name_dict, author_paper_stat)
     (covenue_matrix, author_venue_matrix) = load_covenue_files(id_name_dict, author_paper_matrix, all_author_paper_matrix)
     author_word_matrix = load_author_word_files(id_name_dict, author_paper_matrix)
-    (author_key_word_matrix, co_key_word_matrix_file) = load_author_keyword_files(author_paper_matrix, all_author_paper_matrix)
+    author_key_word_matrix = load_author_keyword_files(author_paper_matrix, all_author_paper_matrix)
     author_org_matrix = load_author_affili_matrix_files()
     author_year_matrix = load_author_year_matrix_files() 
 
     APAPC = coauthor_matrix * author_venue_matrix
-    metapaths = Metapaths(author_paper_matrix, author_venue_matrix, author_word_matrix, author_key_word_matrix, author_org_matrix, author_year_matrix, coauthor_matrix, covenue_matrix, co_key_word_matrix_file, coauthor_2hop_matrix, APAPC)
+    metapaths = Metapaths(author_paper_matrix, author_venue_matrix, author_word_matrix, author_key_word_matrix, author_org_matrix, author_year_matrix, coauthor_matrix, covenue_matrix, coauthor_2hop_matrix, APAPC)
     return (name_instance_dict, id_name_dict, name_statistics, author_paper_stat, metapaths)
 
 
