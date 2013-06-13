@@ -47,7 +47,11 @@ Folders:
 
 How to run:
     1. Install the necessary packages mentioned in the first paragraph.
+
     2. Copy data set into the data/ folder.
+
     3. Run simple_convert.py to generate cleaned Author.csv and PaperAuthor.csv files.
+
     4. Run model/main.py twice to generate confident duplicate authors in the whole dataset
+
     5. Run main.py to generate submission file under result/
