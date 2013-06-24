@@ -40,8 +40,6 @@ Files:
 
     simple_convert.py transforms nonaskii characters in Author.csv and PaperAuthor.csv to askii characters.
 
-    cannot_links.py keeps pairs of author ids that are not possible to be duplicates.
-
 Folders:
 ------------------------------------
     data/ keeps all csv files
@@ -60,6 +58,6 @@ How to run:
 
 3. Run simple_convert.py to generate cleaned Author.csv and PaperAuthor.csv files.
 
-4. Run model/main.py twice to generate confident duplicate authors in the whole dataset
+4. Optional and Time consuming: Run model0/main.py twice to generate confident duplicate authors in the whole dataset
 
 5. Run main.py to generate submission file under result/

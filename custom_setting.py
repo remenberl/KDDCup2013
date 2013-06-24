@@ -12,6 +12,7 @@ duplicate_authors_unconfident_subset_file = "./result/duplicate_authors_unconfid
 
 merge_threshold = 0.00000000001
 word_title_count_threshold = 1000000
+organization_count_threshold = 10000
 
 version = "v3_0"
 serialization_dir = "./serialize/"
@@ -22,15 +23,13 @@ author_word_matrix_file = "author_word.seal" + '.' + version
 author_venue_matrix_file = "author_venue.seal" + '.' + version
 author_paper_matrix_file = "author_paper.seal" + '.' + version
 author_key_word_matrix_file = "author_key_word.seal" + '.' + version
-author_affli_matrix_file = "_author_affli_matrix.seal" + '.' + version
-author_year_matrix_file = "_author_year_matrix.seal" + '.' + version
+author_affli_matrix_file = "author_affli_matrix.seal" + '.' + version
+author_year_matrix_file = "author_year_matrix.seal" + '.' + version
 name_instance_file = "name_instance.seal" + '.' + version
 id_name_file = "id_name.seal" + '.' + version
 name_statistics_file = "name_statistics.seal" + '.' + version
 author_paper_stat_file = "author_paper_stat.seal" + '.' + version
-potential_duplicate_groups_file = "potential_duplicate_groups.seal" + '.' + version
-real_duplicate_groups_file = "real_duplicate_groups.seal" + '.' + version
-analyzed_duplicate_groups_file = "analyzed_duplicate_groups.seal" + '.' + version
+duplicate_groups_file = "duplicate_groups.seal" + '.' + version
 similarity_score_dict_file = "similarity_score.seal" + '.' + version
 cannot_links_file = "cannot_links.seal" + '.' + version
 

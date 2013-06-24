@@ -88,4 +88,4 @@ def run_from_step(step):
        
 
 if __name__ == '__main__':
-    run_from_step(2)
+    run_from_step(1)

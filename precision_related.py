@@ -4,18 +4,19 @@ from custom_setting import *
 from name import *
 from difflib import SequenceMatcher
 import re
-import itertools
 import fuzzy
-from cannot_links import *
 
 normalized_feature_dict = {}
 soundex = fuzzy.Soundex(4)
 
+
 def is_substr(s1, s2):
-    """Does `s1` appear in sequence in `s2`?"""
+    """return whether srtring s1 appear in string in s2"""
     return bool(re.search(".*".join(s1), s2)) or bool(re.search(".*".join(s2), s1))
 
+
 def my_string_match_score(s1, s2, name_statistics, is_asian=False):
+    """Give a score for similarity between s1 and s2"""
     elements_s1 = s1.split()
     elements_s2 = s2.split()
     if len(elements_s1) > len(elements_s2):
@@ -34,7 +35,7 @@ def my_string_match_score(s1, s2, name_statistics, is_asian=False):
                         idx = elements_s2.index(element2)
                         if len(elements_s2) > idx + 1:
                             if element2 + elements_s2[idx + 1] == element1 \
-                                    or (SequenceMatcher(None, element1, element2 + elements_s2[idx + 1]).ratio() >= 0.9 \
+                                    or (SequenceMatcher(None, element1, element2 + elements_s2[idx + 1]).ratio() >= 0.9
                                         and len(element2) >= 3 and len(elements_s2[idx + 1]) >= 3) \
                                     or (element1, element2 + elements_s2[idx + 1]) in nickname_set:
                                 count += 2
@@ -44,7 +45,7 @@ def my_string_match_score(s1, s2, name_statistics, is_asian=False):
                                 break
                         if idx >= 1:
                             if elements_s2[idx - 1] + element2 == element1 \
-                                    or (SequenceMatcher(None, element1, elements_s2[idx - 1] + element2).ratio() >= 0.9 \
+                                    or (SequenceMatcher(None, element1, elements_s2[idx - 1] + element2).ratio() >= 0.9
                                         and len(element2) >= 3 and len(elements_s2[idx - 1]) >= 3) \
                                     or (element1, elements_s2[idx - 1] + element2) in nickname_set:
                                 count += 3
@@ -56,7 +57,7 @@ def my_string_match_score(s1, s2, name_statistics, is_asian=False):
                         idx = elements_s1.index(element1)
                         if len(elements_s1) > idx + 1:
                             if element1 + elements_s1[idx + 1] == element2 \
-                                    or (SequenceMatcher(None, element2, element1 + elements_s1[idx + 1]).ratio() >= 0.9 \
+                                    or (SequenceMatcher(None, element2, element1 + elements_s1[idx + 1]).ratio() >= 0.9
                                         and len(element1) >= 3 and len(elements_s1[idx + 1]) >= 3) \
                                     or (element2, element1 + elements_s1[idx + 1]) in nickname_set:
                                 count += 3
@@ -66,7 +67,7 @@ def my_string_match_score(s1, s2, name_statistics, is_asian=False):
                                 break
                         if idx >= 1:
                             if elements_s1[idx - 1] + element1 == element2 \
-                                    or (SequenceMatcher(None, element1, elements_s1[idx - 1] + element1).ratio() >= 0.9 \
+                                    or (SequenceMatcher(None, element1, elements_s1[idx - 1] + element1).ratio() >= 0.9
                                         and len(element1) >= 3 and len(elements_s1[idx - 1]) >= 3) \
                                     or (element2, elements_s1[idx - 1] + element1) in nickname_set:
                                 count += 3
@@ -96,7 +97,7 @@ def my_string_match_score(s1, s2, name_statistics, is_asian=False):
                             rare_count += 1
                         else:
                             count += 1
-                        if flag == True:
+                        if flag is True:
                             flag = False
                         elements_s2.remove(element2)
                         break
@@ -145,7 +146,8 @@ def my_string_match_score(s1, s2, name_statistics, is_asian=False):
         # print element1 + ' ' + element2 + ' ' + str(count)
     elements_s1 = s1.split(" ")
     elements_s2 = s2.split(" ")
-       
+
+    #Specific operations on noisy last names.
     if elements_s1[-1] != elements_s2[-1]:
         if is_asian:
             if SequenceMatcher(None, elements_s1[-1], elements_s2[-1]).ratio() <= 0.90:
@@ -158,7 +160,7 @@ def my_string_match_score(s1, s2, name_statistics, is_asian=False):
             element2 = elements_s2[-1].lower()
             ldis = SequenceMatcher(None, element1, element2).ratio()
             if ldis <= 0.85 and \
-                        (ldis <= 0.80 or abs(int(soundex(element1)[1:]) - int(soundex(element2)[1:])) > 2):
+                    (ldis <= 0.80 or abs(int(soundex(element1)[1:]) - int(soundex(element2)[1:])) > 2):
                 if elements_s1[-1][:-1] == elements_s2[-1][:-1] \
                         or elements_s1[-1][:-1] == elements_s2[-1] \
                         or elements_s1[-1] == elements_s2[-1][:-1]:
@@ -177,22 +179,10 @@ def my_string_match_score(s1, s2, name_statistics, is_asian=False):
     return count
 
 
-
-def is_name_reorder(name_instance_A, name_instance_B):
-    name_unit_set = set()
-    name_unit_set.add(name_instance_A.first_name)
-    name_unit_set.add(name_instance_A.middle_name)
-    name_unit_set.add(name_instance_A.last_name)
-    
-    if name_instance_B.first_name in name_unit_set and name_instance_B.middle_name in name_unit_set and name_instance_B.last_name in name_unit_set:
-        return True
-    else:
-        return False
-
 def single_name_comparable(name_instance_A, name_instance_B, name_statistics):
+    """Decide whether two name instances are comparable"""
     name_A = name_instance_A.name
     name_B = name_instance_B.name
-
 
     if name_instance_A.is_asian and name_instance_B.is_asian:
         # Han Liu and Huan Liu
@@ -210,11 +200,6 @@ def single_name_comparable(name_instance_A, name_instance_B, name_statistics):
         # Lin Yu, Lin Yi
         if name_instance_A.last_name != name_instance_B.last_name:
             return False
-        # if name_instance_A.first_name[0] == name_instance_B.first_name[0] \
-        #         and len(name_instance_A.first_name) != 1 and len(name_instance_B.first_name) != 1:
-        #     if (name_instance_A.first_name + name_instance_A.middle_name).find(name_instance_B.first_name) < 0 \
-        #             and (name_instance_B.first_name + name_instance_B.middle_name).find(name_instance_A.first_name) < 0:
-        #         return False
 
     if name_B.find(name_A.replace(' ', '')) >= 0 or name_A.find(name_B.replace(' ', '')) >= 0:
         return True
@@ -223,7 +208,7 @@ def single_name_comparable(name_instance_A, name_instance_B, name_statistics):
     if index >= 0:
         string1 = max(name_A, name_B, key=len)
         string2 = min(name_A, name_B, key=len)
-        if index > 0:         
+        if index > 0:
             if string1[index - 1] == ' ':
                 return True
         else:
@@ -267,7 +252,7 @@ def single_name_comparable(name_instance_A, name_instance_B, name_statistics):
                             if SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.first_name[1:]).ratio() < 0.93:
                                 return False
                         else:
-                            ldis = SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.first_name[1:]).ratio() 
+                            ldis = SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.first_name[1:]).ratio()
                             if ldis < 0.93 and\
                                     (ldis < 0.80 or soundex(first_name_1) != soundex(first_name_2)):
                                 return False
@@ -282,11 +267,7 @@ def single_name_comparable(name_instance_A, name_instance_B, name_statistics):
                 if SequenceMatcher(None, name_instance_A.middle_name[1:], name_instance_B.middle_name[1:]).ratio() <= 0.3:
                     return False
 
-    # if len(name_instance_A.last_name) > 1 and len(name_instance_B.last_name) > 1:
-    #     if name_instance_A.last_name[0] == name_instance_B.last_name[0]:
-    #         if not is_substr(name_instance_A.last_name.replace(' ', ''), name_instance_B.last_name.replace(' ', '')):
-    #             if SequenceMatcher(None, name_instance_A.last_name[1:], name_instance_B.last_name[1:]).ratio() < 0.5:
-    #                 return False
+    # Michael Jordan and John Mohammed Jordan
     if name_instance_A.first_name[0] != name_instance_B.first_name[0] and (name_instance_A.first_name, name_instance_B.first_name) not in nickname_initials_set:
         if len(name_instance_B.middle_name) > 0:
             if name_instance_A.first_name[0] == name_instance_B.middle_name[0]:
@@ -294,39 +275,35 @@ def single_name_comparable(name_instance_A, name_instance_B, name_statistics):
                     if my_string_match_score(name_instance_A.first_name, name_instance_B.middle_name, name_statistics) == 0:
                         return False
             else:
-                if my_string_match_score(name_instance_A.name + ' ' + name_instance_A.middle_name, \
-                        name_instance_B.first_name + ' ' + name_instance_B.first_name, name_statistics) == 0:
-                        # if SequenceMatcher(None, name_instance_A.middle_name[1:], name_instance_B.first_name[1:]).ratio() <= 0.9:
+                if my_string_match_score(name_instance_A.name + ' ' + name_instance_A.middle_name,
+                                         name_instance_B.first_name + ' ' + name_instance_B.first_name,
+                                         name_statistics) == 0:
                     return False
-                    # if SequenceMatcher(None, name_instance_A.first_name[1:], name_instance_B.middle_name[1:]).ratio() <= 0.9:
-                    #         return False
         if len(name_instance_A.middle_name) > 0:
             if name_instance_B.first_name[0] == name_instance_A.middle_name[0]:
                 if len(name_instance_B.first_name) > 1 and len(name_instance_A.middle_name) > 1:
                     if my_string_match_score(name_instance_A.middle_name, name_instance_B.first_name, name_statistics) == 0:
-                        # if SequenceMatcher(None, name_instance_A.middle_name[1:], name_instance_B.first_name[1:]).ratio() <= 0.9:
                         return False
             else:
-                if my_string_match_score(name_instance_A.name + ' ' + name_instance_A.middle_name, \
-                        name_instance_B.first_name + ' ' + name_instance_B.first_name, name_statistics) == 0:
-                        # if SequenceMatcher(None, name_instance_A.middle_name[1:], name_instance_B.first_name[1:]).ratio() <= 0.9:
+                if my_string_match_score(name_instance_A.name + ' ' + name_instance_A.middle_name,
+                                         name_instance_B.first_name + ' ' + name_instance_B.first_name,
+                                         name_statistics) == 0:
                     return False
+
     if name_instance_A.last_name != name_instance_B.last_name:
-        # print SequenceMatcher(None, name_instance_A.last_name[1:], name_instance_B.last_name[1:]).ratio()
         if SequenceMatcher(None, name_instance_A.last_name[1:], name_instance_B.last_name[1:]).ratio() <= 0.7:
             return False
         if SequenceMatcher(None, name_instance_A.last_name, name_instance_B.last_name).ratio() <= 0.7:
             return False
-        # if name_instance_A.middle_name != name_instance_B.middle_name and name_instance_A.first_name != name_instance_B.first_name:
-        #     return False
 
     return True
 
 
 def __name_comparable(name_instance_A, name_instance_B, name_statistics, strict_mode=True):
+    """Decide whether two name instances are comparable considering name reordering, not symmetric"""
     if single_name_comparable(name_instance_A, name_instance_B, name_statistics):
         return True
-    
+
     name_A = '- '.join([name_instance_A.last_name, name_instance_A.middle_name, name_instance_A.first_name]).strip()
     new_name_instance_A = Name(name_A)
     new_name_instance_A.is_asian = name_instance_A.is_asian
@@ -343,9 +320,6 @@ def __name_comparable(name_instance_A, name_instance_B, name_statistics, strict_
     new_name_instance_A = Name(name_A)
     new_name_instance_A.is_asian = name_instance_A.is_asian
     if single_name_comparable(new_name_instance_A, name_instance_B, name_statistics):
-        # print 1
-        # print new_name_instance_A.name
-        # print name_instance_B.name
         return True
 
     name_A = '- '.join([name_instance_A.middle_name, name_instance_A.first_name, name_instance_A.last_name]).strip()
@@ -366,30 +340,30 @@ def __name_comparable(name_instance_A, name_instance_B, name_statistics, strict_
 
     return False
 
+
 def name_comparable(name_instance_A, name_instance_B, name_statistics, strict_mode=True):
+    """Decide whether two name instances are comparable considering name reordering, symmetric"""
     return __name_comparable(name_instance_A, name_instance_B, name_statistics, strict_mode) or __name_comparable(name_instance_B, name_instance_A, name_statistics, strict_mode)
-    
+
 
 def name_group_comparable(group, name_instance_dict, id_name_dict, name_statistics):
-    disobey = 0
+    """Decide whether two groups of name instances are comparable"""
     for author_A in group:
         for author_B in group:
             if author_A < author_B:
-                if (author_A, author_B) in cannot_links or (author_B, author_A) in cannot_links:
-                    return False
                 if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]], name_statistics, False):
                     # print "\t\tConflicted name group: " + id_name_dict[author_A][0] + '\tv.s.\t' + id_name_dict[author_B][0]
                     return False
     return True
 
+
 def name_group_comparable_with_tolerence(group, group1, group2, name_instance_dict, id_name_dict, name_statistics):
+    """Decide whether two groups of name instances are comparable with certain tolerance"""
     total = len(group1) * len(group2) + 0.0
     disobey = 0
     for author_A in group1:
         for author_B in group2:
-            # real_duplicate_groups.add(potential_duplicate_group)
             if not name_comparable(name_instance_dict[id_name_dict[author_A][0]], name_instance_dict[id_name_dict[author_B][0]], name_statistics, False):
-                    # print "\t\tConflicted name group: " + id_name_dict[author_A][0] + '\tv.s.\t' + id_name_dict[author_B][0]
                 disobey += 1
     if min(len(group1), len(group2)) >= 4:
         if disobey <= total * 0.2 or disobey <= min(len(group1), len(group2)) * 2:
@@ -402,14 +376,20 @@ def name_group_comparable_with_tolerence(group, group1, group2, name_instance_di
         else:
             return False
 
+
 def compute_similarity_score(author_A, author_B, metapaths):
+    """Compute similarity of two author ids based on metapaths"""
     if author_A not in normalized_feature_dict:
-        feature_A = (metapaths.AP.getrow(author_A), metapaths.APA.getrow(author_A), \
-            metapaths.APV.getrow(author_A), metapaths.APVPA.getrow(author_A), \
-            metapaths.APK.getrow(author_A), \
-            metapaths.AO.getrow(author_A), metapaths.APAPA.getrow(author_A), \
-            metapaths.APAPV.getrow(author_A), \
-            metapaths.AY.getrow(author_A), metapaths.APW.getrow(author_A))
+        feature_A = (metapaths.AP.getrow(author_A),
+                     metapaths.APA.getrow(author_A),
+                     metapaths.APV.getrow(author_A),
+                     metapaths.APVPA.getrow(author_A),
+                     metapaths.APK.getrow(author_A),
+                     metapaths.AO.getrow(author_A),
+                     metapaths.APAPA.getrow(author_A),
+                     metapaths.APAPV.getrow(author_A),
+                     metapaths.AY.getrow(author_A),
+                     metapaths.APW.getrow(author_A))
         normalized_feature_A = (
             normalize(feature_A[0], norm='l2', axis=1),
             normalize(feature_A[1], norm='l2', axis=1),
@@ -417,23 +397,26 @@ def compute_similarity_score(author_A, author_B, metapaths):
             normalize(feature_A[3], norm='l2', axis=1),
             normalize(feature_A[4], norm='l2', axis=1),
             normalize(feature_A[5], norm='l2', axis=1),
-            normalize(feature_A[6], norm='l2', axis=1),
+            normalize(feature_A[6], norm='l2', axis=1))
             # normalize(feature_A[7], norm='l2', axis=1),
             # normalize(feature_A[8], norm='l2', axis=1),
             # normalize(feature_A[9], norm='l2', axis=1),
             # normalize(feature_A[10], norm='l2', axis=1)
-            )
         normalized_feature_dict[author_A] = normalized_feature_A
     else:
         normalized_feature_A = normalized_feature_dict[author_A]
 
     if author_B not in normalized_feature_dict:
-        feature_B = (metapaths.AP.getrow(author_B), metapaths.APA.getrow(author_B), \
-            metapaths.APV.getrow(author_B), metapaths.APVPA.getrow(author_B), \
-            metapaths.APK.getrow(author_B), \
-            metapaths.AO.getrow(author_B), metapaths.APAPA.getrow(author_B), \
-            metapaths.APAPV.getrow(author_B), \
-            metapaths.AY.getrow(author_B), metapaths.APW.getrow(author_A))
+        feature_B = (metapaths.AP.getrow(author_B),
+                     metapaths.APA.getrow(author_B),
+                     metapaths.APV.getrow(author_B),
+                     metapaths.APVPA.getrow(author_B),
+                     metapaths.APK.getrow(author_B),
+                     metapaths.AO.getrow(author_B),
+                     metapaths.APAPA.getrow(author_B),
+                     metapaths.APAPV.getrow(author_B),
+                     metapaths.AY.getrow(author_B),
+                     metapaths.APW.getrow(author_A))
         normalized_feature_B = (
             normalize(feature_B[0], norm='l2', axis=1),
             normalize(feature_B[1], norm='l2', axis=1),
@@ -441,43 +424,36 @@ def compute_similarity_score(author_A, author_B, metapaths):
             normalize(feature_B[3], norm='l2', axis=1),
             normalize(feature_B[4], norm='l2', axis=1),
             normalize(feature_B[5], norm='l2', axis=1),
-            normalize(feature_B[6], norm='l2', axis=1),
+            normalize(feature_B[6], norm='l2', axis=1))
             # normalize(feature_B[7], norm='l2', axis=1),
             # normalize(feature_B[8], norm='l2', axis=1),
             # normalize(feature_B[9], norm='l2', axis=1),
             # normalize(feature_B[10], norm='l2', axis=1)
-            )
         normalized_feature_dict[author_B] = normalized_feature_B
     else:
         normalized_feature_B = normalized_feature_dict[author_B]
 
-    similarity = (1000000 * normalized_feature_A[0].multiply(normalized_feature_B[0]).sum(), #same paper
-             100000 * normalized_feature_A[1].multiply(normalized_feature_B[1]).sum(), #APA
-             100000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(), #AV
-             1000 * normalized_feature_A[3].multiply(normalized_feature_B[3]).sum(), #AVA
-             # 1000 * normalized_feature_A[3].multiply(normalized_feature_B[6]).sum(),
-             # 1000 * normalized_feature_A[6].multiply(normalized_feature_B[3]).sum(),
-             100000 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum(), #APK
-             10000000 * normalized_feature_A[5].multiply(normalized_feature_B[5]).sum(), #AO
-             1000 * normalized_feature_A[6].multiply(normalized_feature_B[6]).sum(), #APAPA
-             # 1000 * normalized_feature_A[7].multiply(normalized_feature_B[7]).sum(), #APKPA
-             # 1000 * normalized_feature_A[8].multiply(normalized_feature_B[8]).sum(), #APAPV
-             # 1 * normalized_feature_A[9].multiply(normalized_feature_B[9]).sum(), #AY
-             # 1000 * normalized_feature_A[10].multiply(normalized_feature_B[10]).sum(), #APW
-             merge_threshold)
+    similarity = (
+        1000000 * normalized_feature_A[0].multiply(normalized_feature_B[0]).sum(),  # same paper
+        100000 * normalized_feature_A[1].multiply(normalized_feature_B[1]).sum(),  # APA
+        100000 * normalized_feature_A[2].multiply(normalized_feature_B[2]).sum(),  # AV
+        1000 * normalized_feature_A[3].multiply(normalized_feature_B[3]).sum(),  # AVA
+        # 1000 * normalized_feature_A[3].multiply(normalized_feature_B[6]).sum(),
+        # 1000 * normalized_feature_A[6].multiply(normalized_feature_B[3]).sum(),
+        100000 * normalized_feature_A[4].multiply(normalized_feature_B[4]).sum(),  # APK
+        10000000 * normalized_feature_A[5].multiply(normalized_feature_B[5]).sum(),  # AO
+        1000 * normalized_feature_A[6].multiply(normalized_feature_B[6]).sum(),  # APAPA
+        # 1000 * normalized_feature_A[7].multiply(normalized_feature_B[7]).sum(),  # APKPA
+        # 1000 * normalized_feature_A[8].multiply(normalized_feature_B[8]).sum(),  # APAPV
+        # 1 * normalized_feature_A[9].multiply(normalized_feature_B[9]).sum(),  # AY
+        # 1000 * normalized_feature_A[10].multiply(normalized_feature_B[10]).sum(),  # APW
+        merge_threshold)
 
     return similarity
 
-def is_simple_name(name):
-    elements = name.split(' ')
-    for element in elements[:-1]:
-        if len(element) != 1:
-            break
-    else:
-        return True
-    return False
 
 def merge_name_instances(name_instance_dict, id_name_dict, author_A, author_B):
+    """Merge author_B's name instance into author_A's"""
     if id_name_dict[author_A][0] == id_name_dict[author_B][0]:
         return
     to_del = id_name_dict[author_B][0]
@@ -486,27 +462,15 @@ def merge_name_instances(name_instance_dict, id_name_dict, author_A, author_B):
         id_name_dict[id][0] = id_name_dict[author_A][0]
     del name_instance_dict[to_del]
 
-duplicate_candidate_dict = {}
 
 def local_clustering(similarity_dict, potential_duplicate_groups, author_paper_stat, name_instance_dict, id_name_dict, name_statistics, metapaths):
-    """Detect duplicate groups based on coauthor relationship between authors.
-
-    Parameters:
-        potential_duplicate_groups:
-            A set containing lots of tuples describing the potential duplicate group.
-        coauthor_matrix:
-            A sparse matrix with row: author_id and column: author_id.
-            It is obtained from author_paper_matrix.
-
-    Returns:
-        A set containing lots of tuples describing the real duplicate group.
-    """
+    """Detect duplicate pairs based on coauthor relationship between authors."""
     count = 0
     statistic = [0] * 14
     real_duplicate_groups = set()
 
-    normalized_feature_dict = {}
-    for potential_duplicate_group in potential_duplicate_groups:  
+    # Compute similarity between two name ids based on metapaths if their name are comparable
+    for potential_duplicate_group in potential_duplicate_groups:
         if count % 10000 == 0:
             print "\tFinish computing similarities for " \
                 + str(float(count)/len(potential_duplicate_groups)*100) \
@@ -521,12 +485,13 @@ def local_clustering(similarity_dict, potential_duplicate_groups, author_paper_s
         name_B = id_name_dict[author_B][0]
         if not name_comparable(name_instance_dict[name_A], name_instance_dict[name_B], name_statistics):
             continue
-       
+
         if potential_duplicate_group not in similarity_dict:
             similarity = compute_similarity_score(author_A, author_B, metapaths)
             similarity_dict[potential_duplicate_group] = max(similarity)
-        # statistic[similarity.index(max(similarity))] += 1
-        
+            statistic[similarity.index(max(similarity))] += 1
+
+    # Sort author pairs based on their similarity, then merge their name instances if necessary
     sorted_potential_duplicate_groups = sorted(similarity_dict.keys(), key=lambda x: -similarity_dict[x])
     for potential_duplicate_group in sorted_potential_duplicate_groups:
         if count % 10000 == 0:
@@ -556,6 +521,8 @@ def local_clustering(similarity_dict, potential_duplicate_groups, author_paper_s
 
         name_instance_A = name_instance_dict[id_name_dict[author_A][0]]
         name_instance_B = name_instance_dict[id_name_dict[author_A][0]]
+
+        # Merge two name instances
         if name_A != name_B:
             if len(name_A) <= 10 or len(name_B) <= 10:
                 pass
@@ -566,17 +533,17 @@ def local_clustering(similarity_dict, potential_duplicate_groups, author_paper_s
                     or my_string_match_score(name_A, name_B, name_statistics, name_instance_A.is_asian or name_instance_B.is_asian) >= 10:
                 if len(name_A.split()) > len(name_B.split()):
                     print "\t\tMerge two name instances: " + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids)) + \
-                            '   <--   ' + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids))
+                          '   <--   ' + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids))
                     merge_name_instances(name_instance_dict, id_name_dict, author_A, author_B)
                 elif len(name_A.split()) < len(name_B.split()):
                     print "\t\tMerge two name instances: " + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids)) + \
-                            '   <--   ' + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids))
+                          '   <--   ' + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids))
                     merge_name_instances(name_instance_dict, id_name_dict, author_B, author_A)
                 elif len(name_instance_dict[name_A].author_ids) > len(name_instance_dict[name_B].author_ids):
                     print "\t\tMerge two name instances: " + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids)) + \
-                            '   <--   ' + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids))
+                          '   <--   ' + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids))
                     merge_name_instances(name_instance_dict, id_name_dict, author_A, author_B)
-                   
+
                 elif len(name_instance_dict[name_A].author_ids) == len(name_instance_dict[name_B].author_ids):
                     score_A = 0
                     elements = name_A.split()
@@ -598,44 +565,27 @@ def local_clustering(similarity_dict, potential_duplicate_groups, author_paper_s
                         score_B /= len(elements)
                     if score_A > score_B:
                         print "\t\tMerge two name instances: " + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids)) + \
-                            '   <--   ' + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids))
+                              '   <--   ' + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids))
                         merge_name_instances(name_instance_dict, id_name_dict, author_A, author_B)
                     elif score_A == score_B:
                         if len(name_B) >= len(name_A):
                             print "\t\tMerge two name instances: " + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids)) + \
-                                '   <--   ' + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids))
+                                  '   <--   ' + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids))
                             merge_name_instances(name_instance_dict, id_name_dict, author_A, author_B)
                         else:
                             print "\t\tMerge two name instances: " + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids)) + \
-                                '   <--   ' + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids))
-                            merge_name_instances(name_instance_dict, id_name_dict, author_B, author_A)                          
+                                  '   <--   ' + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids))
+                            merge_name_instances(name_instance_dict, id_name_dict, author_B, author_A)
                     else:
                         print "\t\tMerge two name instances: " + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids)) + \
-                            '   <--   ' + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids))
-                        merge_name_instances(name_instance_dict, id_name_dict, author_B, author_A) 
+                              '   <--   ' + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids))
+                        merge_name_instances(name_instance_dict, id_name_dict, author_B, author_A)
                 else:
                     print "\t\tMerge two name instances: " + id_name_dict[author_B][1] + ': ' + str(len(name_instance_dict[name_B].author_ids)) + \
-                            '   <--   ' + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids))
-                    merge_name_instances(name_instance_dict, id_name_dict, author_B, author_A) 
-                    
+                          '   <--   ' + id_name_dict[author_A][1] + ': ' + str(len(name_instance_dict[name_A].author_ids))
+                    merge_name_instances(name_instance_dict, id_name_dict, author_B, author_A)
 
-        # similarity = compute_similarity_score(author_A, author_B, metapaths)
-        # if max(similarity) >= merge_threshold:
-        #     if max(similarity) == merge_threshold:
-        #         name_A = name_A
-        #         name_B = name_B
-        #         if name_A == '' or name_B == '':
-        #             continue
-        #         # if SequenceMatcher(None, name_instance_dict[name_A].last_name, name_instance_dict[name_B].last_name).ratio() > 0.6:
-        #         #     if name_A.last_name != name_B.last_name and \
-        #         #             name_A.last_name[:-1] != name_B.last_name and \
-        #         #             name_A.last_name != name_B.last_name[:-1] and \
-        #         #             name_A.last_name[:-1] != name_B.last_name[:-1]:
-        #         #         continue
-        if (author_A, author_B) not in cannot_links and (author_B, author_A) not in cannot_links:
-            real_duplicate_groups.add(potential_duplicate_group)
-        
-        # similarity_dict[potential_duplicate_group] = max(similarity)
+        real_duplicate_groups.add(potential_duplicate_group)
 
     return real_duplicate_groups
 
@@ -671,6 +621,7 @@ def merge_local_clusters(real_duplicate_groups, id_name_dict):
 
 
 def find_conflict_name(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics):
+    """Find author ids whose duplicate author list contain conflicts in terms of their names"""
     conflict_ids = set()
     for (author_id, duplicate_group) in authors_duplicates_dict.iteritems():
         if not name_group_comparable(duplicate_group, name_instance_dict, id_name_dict, name_statistics):
@@ -718,6 +669,7 @@ def find_closure(authors_duplicates_dict):
 
 
 def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, name_statistics, similarity_dict, metapaths, remove_flag):
+    """Filter obvious conflict names of duplicate authors for each author id."""
     for author_id in authors_duplicates_dict.iterkeys():
         if author_id in authors_duplicates_dict[author_id]:
             authors_duplicates_dict[author_id].remove(author_id)
@@ -726,8 +678,10 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, nam
         count = 0
         for author_id in authors_duplicates_dict.iterkeys():
             for duplicate_author_id in set(authors_duplicates_dict[author_id]):
-                if not name_comparable(name_instance_dict[id_name_dict[author_id][0]], \
-                        name_instance_dict[id_name_dict[duplicate_author_id][0]], name_statistics, False):
+                if not name_comparable(name_instance_dict[id_name_dict[author_id][0]],
+                                       name_instance_dict[id_name_dict[duplicate_author_id][0]],
+                                       name_statistics,
+                                       False):
                     authors_duplicates_dict[author_id].remove(duplicate_author_id)
                     if author_id in authors_duplicates_dict[duplicate_author_id]:
                         authors_duplicates_dict[duplicate_author_id].remove(author_id)
@@ -743,9 +697,9 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, nam
         count += 1
         if count % 100 == 0:
             print "\tAdding pairwise similarities of " \
-                    + str(float(count)/len(conflict_ids)*100) \
-                    + "% (" + str(count) + "/" + str(len(conflict_ids)) \
-                    + ") conflict groups."
+                + str(float(count)/len(conflict_ids)*100) \
+                + "% (" + str(count) + "/" + str(len(conflict_ids)) \
+                + ") conflict groups."
         pool = authors_duplicates_dict[author_id]
         pool.add(author_id)
         for id in pool:
@@ -789,9 +743,9 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, nam
         count += 1
         if count % 1000 == 0:
             print "\tFinish merging " \
-                    + str(float(count)/len(bad_pairs)*100) \
-                    + "% (" + str(count) + "/" + str(len(bad_pairs)) \
-                    + ") conflict groups with tolerance."
+                + str(float(count)/len(bad_pairs)*100) \
+                + "% (" + str(count) + "/" + str(len(bad_pairs)) \
+                + ") conflict groups with tolerance."
         author1 = author_pair[0]
         author2 = author_pair[1]
         group1 = tuple()
@@ -823,77 +777,20 @@ def refine_result(authors_duplicates_dict, name_instance_dict, id_name_dict, nam
                 authors_duplicates_dict[id].remove(author_id)
         authors_duplicates_dict[author_id] = set(new_group)
 
-    # count = 0
-    # for author_id in conflict_ids:
-    #     pool = authors_duplicates_dict[author_id]
-    #     pool = sorted(pool, key=lambda candi: -similarity_dict[tuple(sorted((author_id, candi)))])
-    #     group = [author_id]
-    #     for candidate in pool:
-    #         group.append(candidate)
-    #         if not name_group_comparable(group, name_instance_dict, id_name_dict, name_statistics):
-    #             group.pop()
-    #     for id in authors_duplicates_dict[author_id]:
-    #         if id not in group and author_id in authors_duplicates_dict[id]:
-    #             authors_duplicates_dict[id].remove(author_id)
-    #     authors_duplicates_dict[author_id] = set(group)
-    #     count += 1
-    #     if count % 100 == 0:
-    #         print "\tFinish analysing " \
-    #             + str(float(count)/len(conflict_ids)*100) \
-    #             + "% (" + str(count) + "/" + str(len(conflict_ids)) \
-    #             + ") conflict_ids."
-
     for author_id in authors_duplicates_dict.iterkeys():
         if author_id in authors_duplicates_dict[author_id]:
             authors_duplicates_dict[author_id].remove(author_id)
 
-def pre_filter(authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_dict, metapaths):
-    count = 0
-    for (author_id, group) in authors_duplicates_dict.iteritems():
-        elements = id_name_dict[author_id][0].split()
-        i = 0
-        for element in elements:
-            if len(element) > 1:
-                i += 1
-        if i >= 2:
-            continue
-        to_remove_set = set()
-        for id in group:
-            if id_name_dict[author_id][0] != id_name_dict[id][0]:
-                if tuple(sorted((author_id, id))) not in similarity_dict:
-                    similarity_dict[tuple(sorted((author_id, id)))] = max(compute_similarity_score(author_id, id, metapaths))
-                if similarity_dict[tuple(sorted((author_id, id)))] <= 30:
-                    to_remove_set.add(id)
-        for id in to_remove_set:
-            authors_duplicates_dict[author_id].remove(id)
-            count += 1
-            if author_id in authors_duplicates_dict[id]:
-                authors_duplicates_dict[id].remove(author_id)
-    print "\tFinish removing " + str(float(count)) \
-                + " unconfident names."
-
-
 
 def final_filter(author_paper_stat, name_statistics, authors_duplicates_dict, name_instance_dict, id_name_dict, similarity_dict, metapaths):
-    # for (pair, score) in similarity_dict.iteritems():
-    #     if score > 100000:
-    #         if not name_instance_dict[id_name_dict[pair[0]][0]].is_asian and not name_instance_dict[id_name_dict[pair[1]][0]].is_asian:
-    #             if name_instance_dict[id_name_dict[pair[0]][0]].last_name ==  name_instance_dict[id_name_dict[pair[1]][0]].last_name \
-    #                 and len(id_name_dict[pair[0]][0]) >= 10 and len(id_name_dict[pair[1]][0]) >= 10:
-    #                 duplicate_candidate_dict.setdefault(pair[0], set()).add(pair[1])
-    #                 duplicate_candidate_dict.setdefault(pair[1], set()).add(pair[0])
-
-    for (author_id, candi_ids) in duplicate_candidate_dict.iteritems():
-        for candi_id in candi_ids:
-            authors_duplicates_dict[author_id] = authors_duplicates_dict[author_id].union(authors_duplicates_dict[candi_id])
-            for id in authors_duplicates_dict[author_id]:
-                authors_duplicates_dict[id] = authors_duplicates_dict[id].union(authors_duplicates_dict[candi_id])
-
+    """Filter obvious not confident names of duplicate authors for each author id."""
     count = 0
     for author_id in authors_duplicates_dict.iterkeys():
         for duplicate_author_id in set(authors_duplicates_dict[author_id]):
-            if not name_comparable(name_instance_dict[id_name_dict[author_id][0]], \
-                    name_instance_dict[id_name_dict[duplicate_author_id][0]], name_statistics, False):
+            if not name_comparable(name_instance_dict[id_name_dict[author_id][0]],
+                                   name_instance_dict[id_name_dict[duplicate_author_id][0]],
+                                   name_statistics,
+                                   False):
                 authors_duplicates_dict[author_id].remove(duplicate_author_id)
                 if author_id in authors_duplicates_dict[duplicate_author_id]:
                     authors_duplicates_dict[duplicate_author_id].remove(author_id)
@@ -930,11 +827,9 @@ def final_filter(author_paper_stat, name_statistics, authors_duplicates_dict, na
         for id in candi_ids:
             if id in author_paper_stat and author_paper_stat[id] >= 1 and id_name_dict[id][0] in name_instance_dict:
                 authors_duplicates_dict[author_id] = authors_duplicates_dict[author_id].union(name_instance_dict[id_name_dict[id][0]].author_ids)
-     
     count = 0
     for author_id in authors_duplicates_dict.iterkeys():
         if len(authors_duplicates_dict[author_id]) == 1:
-            name_instance_A = name_instance_dict[id_name_dict[author_id][0]]
             name_A = id_name_dict[author_id][0]
             elements_A = name_A.split(' ')
             #remove  A Dgh EF and Abc EF pairs
@@ -942,7 +837,6 @@ def final_filter(author_paper_stat, name_statistics, authors_duplicates_dict, na
             for id in authors_duplicates_dict[author_id]:
                 # if similarity_dict[tuple(sorted((id, author_id)))] > merge_threshold:
                 #     continue
-                name_instance_B = name_instance_dict[id_name_dict[id][0]]
                 name_B = id_name_dict[id][0]
                 elements_B = name_B.split(' ')
                 if ''.join(elements_A) == ''.join(elements_B):
@@ -959,20 +853,17 @@ def final_filter(author_paper_stat, name_statistics, authors_duplicates_dict, na
                         print '\t\tRemoving ' + name_B + ' from duplicates_set of ' + name_A
             for id in to_remove_set:
                 authors_duplicates_dict[author_id].remove(id)
-        if len(authors_duplicates_dict[author_id]) <= 2 :
+        if len(authors_duplicates_dict[author_id]) <= 2:
             if author_id not in id_name_dict or id_name_dict[author_id][0] not in name_instance_dict:
                 continue
-            name_instance_A = name_instance_dict[id_name_dict[author_id][0]]
             name_A = id_name_dict[author_id][0]
             elements_A = name_A.split(' ')
             #remove  A Dgh EF and Abc EF pairs
             to_remove_set = set()
             flag = 0
             for id in authors_duplicates_dict[author_id]:
-                
                 # if similarity_dict[tuple(sorted((id, author_id)))] > merge_threshold:
                 #     continue
-                name_instance_B = name_instance_dict[id_name_dict[id][0]]
                 name_B = id_name_dict[id][0]
                 elements_B = name_B.split(' ')
                 if max(len(elements_A), len(elements_B)) >= 3 and min(len(elements_A), len(elements_B)) == 2:
@@ -1005,43 +896,8 @@ def final_filter(author_paper_stat, name_statistics, authors_duplicates_dict, na
                 for id in to_remove_set:
                     authors_duplicates_dict[author_id].remove(id)
 
-    # count = 0
-    # for author_id in authors_duplicates_dict.iterkeys():
-    #     if len(authors_duplicates_dict[author_id]) == 1:
-    #         name_instance_A = name_instance_dict[id_name_dict[author_id][0]]
-    #         name_A = id_name_dict[author_id][0]
-    #         elements_A = name_A.split(' ')
-    #         #remove  A Dgh EF and Abc EF pairs
-    #         to_remove_set = set()
-    #         for id in authors_duplicates_dict[author_id]:
-    #             if similarity_dict[tuple(sorted((id, author_id)))] > merge_threshold:
-    #                 continue
-    #             name_instance_B = name_instance_dict[id_name_dict[id][0]]
-    #             if len(authors_duplicates_dict[author_id]) <= 2 and len(name_instance_A.initials) != len(name_instance_B.initials):
-    #                 if is_substr(''.join(sorted(name_instance_A.name.replace(' ', ''))), ''.join(sorted(name_instance_B.name.replace(' ', '')))):
-    #                     to_remove_set.add(id)
-    #                     count += 1
-    #                     print '\t\tRemoving ' + name_instance_B.name + ' from duplicates_set of ' + name_A
-    #         for id in to_remove_set:
-    #             authors_duplicates_dict[author_id].remove(id)
-    
-    # # for author_id in authors_duplicates_dict.iterkeys():
-    #     to_remove_set = set()
-    #     length1 = len(name_instance_dict[id_name_dict[author_id][0]].initials)
-    #     for id in authors_duplicates_dict[author_id]:
-    #         length2 = len(name_instance_dict[id_name_dict[id][0]].initials)
-    #         if abs(length1 - length2) >= 2:
-    #             if tuple(sorted((author_id, id))) not in similarity_dict:
-    #                 similarity_dict[tuple(sorted((author_id, id)))] = max(compute_similarity_score(author_id, id, metapaths))
-    #             if similarity_dict[tuple(sorted((author_id, id)))] <= 50:
-    #                 to_remove_set.add(id)
-    #                 count += 1
-    #                 print '\t\tRemoving ' + id_name_dict[id][1] + ' from duplicates_set of ' + id_name_dict[author_id][1]
-    #     for id in to_remove_set:
-    #         authors_duplicates_dict[author_id].remove(id)
-    
     print "\tFinish removing " + str(float(count)) \
-                + " unconfident names."
+        + " unconfident names."
 
     for author_id in authors_duplicates_dict.iterkeys():
         if id_name_dict[author_id][1] == '':
@@ -1054,4 +910,3 @@ def final_filter(author_paper_stat, name_statistics, authors_duplicates_dict, na
                 authors_duplicates_dict[author_id].remove(id)
         if author_id not in author_paper_stat or author_paper_stat[author_id] == 0:
             authors_duplicates_dict[author_id] = set()
-    

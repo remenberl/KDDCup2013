@@ -1,18 +1,11 @@
 #-*- coding: UTF-8 -*-
 from difflib import SequenceMatcher
 from name import *
-from simhash import *
 from precision_related import *
 
-def add_similar_ids_under_name(name_instance_dict, id_name_dict):
-    """Find similar id for each name in name_instance_dict.
 
-    Parameters:
-        name_instance_dict:
-            A dictionary with key: author's name string and value:
-            name instance. Note that the author's name is clean after
-            instantiation of the Name class.
-    """
+def add_similar_ids_under_name(name_instance_dict, id_name_dict):
+    """Find similar id for each name in name_instance_dict."""
     print "\tBuilding virtual names."
     virtual_name_set = set()
     for (author_name, name_instance) in name_instance_dict.iteritems():
@@ -38,7 +31,6 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                 # of the current name.
                 for id in name_instance_dict[alternative].author_ids:
                     name_instance_dict[author_name].add_similar_author_id(id)
-    
 
     reduced_name_pool = {}
     length = len(name_instance_dict) - len(virtual_name_set)
@@ -103,8 +95,7 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                     for id in name_instance1.author_ids:
                         name_instance2.add_similar_author_id(id)
                     for id in name_instance2.author_ids:
-                        name_instance1.add_similar_author_id(id)  
-
+                        name_instance1.add_similar_author_id(id)
 
     name_unit_pool = {}
     length = len(name_instance_dict) - len(virtual_name_set)
@@ -121,7 +112,7 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
             elements = name_instance.name.split()
             for element in elements:
                 name_unit_pool.setdefault(element, set()).add(author_name)
-    
+
     name_finger_dict = {}
     for (author_name, name_instance) in name_instance_dict.iteritems():
         name_finger_dict[author_name] = ''.join(sorted(author_name.split()))
@@ -141,7 +132,7 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                 pool = name_unit_pool[element]
                 for author_name2 in pool:
                     if author_name1 < author_name2:
-                        if author_name1.find(author_name2) >=0 or author_name2.find(author_name1) >= 0:
+                        if author_name1.find(author_name2) >= 0 or author_name2.find(author_name1) >= 0:
                             if abs(len(author_name1) - len(author_name2)) <= 3 and len(author_name1) >= 8 and len(author_name2) >= 8 or\
                                     len(author_name1) > 15 and len(author_name2) > 15:
                                 name_instance2 = name_instance_dict[author_name2]
@@ -179,13 +170,12 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
     #                 + "% (" + str(count) + "/" + str(length) + ") names."
     #         pool = hash_pool[hash_dict[author_name1].hash]
     #         for author_name2 in pool:
-    #             if author_name1 <= author_name2: 
+    #             if author_name1 <= author_name2:
     #                 name_instance2 = name_instance_dict[author_name2]
     #                 for id in name_instance1.author_ids:
     #                     name_instance2.add_similar_author_id(id)
     #                 for id in name_instance2.author_ids:
-    #                     name_instance1.add_similar_author_id(id)             
-
+    #                     name_instance1.add_similar_author_id(id)
 
     length = len(name_instance_dict) - len(virtual_name_set)
     init_full_dict = {}
@@ -239,13 +229,12 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                     for id in name_instance_dict[author_name_list[0]].author_ids:
                         name_instance_candidate.add_similar_author_id(id)
                     for id in name_instance_candidate.author_ids:
-                        name_instance_dict[author_name_list[0]].add_similar_author_id(id)                    
+                        name_instance_dict[author_name_list[0]].add_similar_author_id(id)
             count += 1
             if count % 300 == 0:
                 print "\t\tFinish matching " + str(count)\
                     + " names containing question mark or non askii characters with the whole database."
     print "\t\tIn total there exist " + str(count) + " names containing question marks or non askii characters."
-
 
     print "\tStart arbitrary name comparison:"
     count = 0
@@ -261,7 +250,7 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                             for id in name_instance_dict[author_name].author_ids:
                                 name_instance_candidate.add_similar_author_id(id)
                             for id in name_instance_candidate.author_ids:
-                                name_instance_dict[author_name].add_similar_author_id(id)                    
+                                name_instance_dict[author_name].add_similar_author_id(id)
             count += 1
             if count % 30000 == 0:
                 print "\t\tFinish matching " + str(float(count)/length*100)\
@@ -284,6 +273,7 @@ def add_similar_ids_under_name(name_instance_dict, id_name_dict):
                     if count % 2000 == 0:
                         print "\t\tFinish matching " + str(count)\
                             + " pairs of nicknames."
+
 
 def create_potential_duplicate_groups(name_instance_dict, author_paper_stat):
     """Create potential duplicate groups for local clustering algorithm to analyse.

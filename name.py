@@ -87,7 +87,6 @@ class Name:
             s = ' '.join([first_name, middle_name, last_name]).strip()
             return ' '.join(s.split())
 
-
     def __init__(self, name, quick=False):
         """Initialize the instance with a name.
 
@@ -203,7 +202,6 @@ class Name:
         #         middle_name = ''
         return (first_name, middle_name, last_name)
 
-
     def __shorten_string(self, string):
         """Find initial of a string.
 
@@ -264,7 +262,7 @@ class Name:
                        last_name]
                        ).strip())
 
-        #e.g., Jordan Jr. Michael 
+        #e.g., Jordan Jr. Michael
         limit = 1
         if len(last_name) == 1:
             limit -= 1
@@ -278,15 +276,9 @@ class Name:
             candidates.add(' '.join([last_name, first_name, middle_name]).strip())
             candidates.add(' '.join([first_name, last_name, middle_name]).strip())
             candidates.add(' '.join([middle_name, first_name, last_name]).strip())
-        
+
         if len(self.initials) > 3:
             candidates.add(' '.join([first_name, middle_name]).strip())
-            # candidates.add(' '.join([middle_name, last_name]).strip())
-            # elements = middle_name.split(' ')
-            # if len(elements) >= 2:
-            #     for i in xrange(len(elements) - 1):
-            #         tmp = ' '.join(elements[:i])
-            #         candidates.add(' '.join([first_name, tmp]).strip())
 
         candidates_new = set()
         for candidate in candidates:
@@ -297,10 +289,6 @@ class Name:
         #                self.__shorten_string(middle_name),
         #                self.__shorten_string(last_name)]
         #                ))
-
-        #####################################################
-        # Further improvements: alternatives like Mike
-
         return candidates_new
 
     def __generate_all_possible_names(self):
