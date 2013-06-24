@@ -58,6 +58,6 @@ How to run:
 
 3. Run simple_convert.py to generate cleaned Author.csv and PaperAuthor.csv files.
 
-4. Optional and Time consuming: Run model0/main.py twice to generate confident duplicate authors in the whole dataset
+4. Optional and Time consuming: Run model0/main.py to generate confident duplicate authors in the whole dataset
 
 5. Run main.py to generate submission file under result/

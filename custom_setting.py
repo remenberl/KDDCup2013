@@ -1,7 +1,7 @@
 #-*- coding: UTF-8 -*-
 author_file = "./data/Author_refined_simple.csv"
 paper_author_file = "./data/PaperAuthor_refined_simple.csv"
-paper_file = './data/sanitizedPaper.csv'
+paper_file = './data/Paper.csv'
 stopword_file = './data/Stopword.csv'
 confident_duplicate_authors_file = './data/complete_duplicate_authors_2.csv'
 

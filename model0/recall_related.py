@@ -1,7 +1,6 @@
 #-*- coding: UTF-8 -*-
 from difflib import SequenceMatcher
 from name import *
-from simhash import *
 
 def add_similar_ids_under_name(name_instance_dict, id_name_dict, author_paper_stat):
     """Find similar id for each name in name_instance_dict.
