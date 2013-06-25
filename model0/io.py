@@ -793,7 +793,7 @@ def save_result(authors_duplicates_dict, name_instance_dict, id_name_dict, simil
             A dictionary with key: author_id and value: author's name strings.
             Note that the value is a tuple of clean name and noisy name.
     """
-    directory = os.path.dirname(duplicate_authors_file)
+    directory = os.path.dirname(duplicate_authors_full_name_file)
     if not os.path.exists(directory):
         os.makedirs(directory)
     with open(duplicate_authors_file, 'wb') as result_file:
